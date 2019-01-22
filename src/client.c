@@ -10,9 +10,10 @@
 #include <netinet/tcp.h>
 #include <time.h>
 
-#define BUFSIZE 1024
+#define PORT 8045
 #define SYN 0
 #define SYNACK 1
+#define FIN 2
 
 unsigned short checksum(unsigned short *ptr, int nbytes);
 int generate_rand();
@@ -41,6 +42,17 @@ struct pseudo_header {
 } pseudo_header;
 
 int main (int argc, char** argv){
+
+    char targetip[BUFSIZ];
+    char localip[BUFSIZ];
+
+    if(geteuid() != 0) {
+        printf("Must run as root\n");
+        exit(1);
+    }
+    strncpy(targetip, "192.168.0.0", BUFSIZ);
+    strncpy(localip, "192.168.0.0", BUFSIZ);
+    tcp_send(localtip, targetip, PORT, PORT, 0, 10000, SYN);
 
     return 0;
 }
@@ -87,23 +99,30 @@ void tcp_send(char *src_ip, char *dst_ip, unsigned short src_port, unsigned shor
     } else {
         packet.tcp.source = htons(src_port);
     }
-
-    //check if we are forging SEQ
     packet.tcp.seq = seq;
     //packet.tcp.seq = generate_rand(10000.0);
     packet.tcp.dest = htons(dst_port);
     packet.tcp.ack_seq = 0;
     packet.tcp.res1 = 0;
     packet.tcp.doff = 5;
+    if( flag == FIN){
+        packet.tcp.fin = 1;
+    } else {
+        packet.tcp.fin = 0;
+    }
     packet.tcp.fin = 0;
-    if(flag == SYN){
+    if(flag == SYN || flag == SYNACK){
         packet.tcp.syn = 1;
     } else {
         packet.tcp.syn = 0;
     }
     packet.tcp.rst = 0;
     packet.tcp.psh = 0;
-    packet.tcp.ack = 0;
+    if(flag == ACK || flag == SYNACK){
+        packet.tcp.ack = 1;
+    } else {
+        packet.tcp.ack = 0;
+      }
     packet.tcp.urg = 0;
     packet.tcp.res2 = 0;
     packet.tcp.window = htons(512);
