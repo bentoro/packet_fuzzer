@@ -8,14 +8,14 @@
 #include <unistd.h>
 
 #define SERVER_TCP_PORT 7000
-#define BUFLEN 80
+#define BUFSIZE 1024
 
 int main(int argc, char** argv){
     int n, bytes_to_read;
     int sd, new_sd, port;
     socklen_t client_len;
     struct sockaddr_in server, client;
-    char *bp, buf[BUFLEN];
+    char *bp, buf[BUFSIZE];
 
     port = SERVER_TCP_PORT;
 
@@ -33,15 +33,15 @@ int main(int argc, char** argv){
     new_sd = accept(sd, (struct sockaddr *)&client, &client_len);
 
     bp = buf;
-    bytes_to_read = BUFLEN;
-    while ((n = recv(new_sd, bp, bytes_to_read, 0)) < BUFLEN){
+    bytes_to_read = BUFSIZE;
+    while ((n = recv(new_sd, bp, bytes_to_read, 0)) < BUFSIZE){
         bp += n;
         bytes_to_read -= n;
     }
 
     printf("sending: %s\n", buf);
 
-    send(new_sd, buf, BUFLEN, 0);
+    send(new_sd, buf, BUFSIZE, 0);
     close(new_sd);
     close(sd);
 

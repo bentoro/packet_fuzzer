@@ -13,6 +13,7 @@
 #define BUFSIZE 1024
 #define SYN 0
 #define SYNACK 1
+#define PORT 8045
 
 unsigned short checksum(unsigned short *ptr, int nbytes);
 int generate_rand();
@@ -41,7 +42,37 @@ struct pseudo_header {
 } pseudo_header;
 
 int main (int argc, char** argv){
+    int n = 0, bytes_to_read;
+    int sd, port;
+    struct hostent *hp;
+    struct sockaddr_in server;
+    char *host, *bp, rbuf[BUFSIZE], sbuf[BUFSIZE];
+    host = argv[1];
+    port = PORT;
+    sd = socket(AF_INET, SOCK_STREAM,0);
+    bzero((char *)&server, sizeof(struct sockaddr_in));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(port);
+    hp = gethostbyname(host);
+    bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
+    connect(sd, (struct sockaddr *)&server, sizeof(server));
 
+    strncpy(sbuf, "hi", BUFSIZE);
+    send(sd, sbuf, BUFSIZE, 0);
+
+    printf("Receive:\n");
+    bp = rbuf;
+    bytes_to_read = BUFSIZE;
+
+    while((n = recv(sd, bp, bytes_to_read, 0)) < BUFSIZE){
+        bp+=n;
+        bytes_to_read-=n;
+    }
+
+    printf("%s\n", rbuf);
+    close(sd);
+    return(0);
+    //tcp_send("192.168.1.86", "192.168.1.72", PORT, PORT, 0, 10000, SYN);
     return 0;
 }
 
@@ -73,7 +104,7 @@ void tcp_send(char *src_ip, char *dst_ip, unsigned short src_port, unsigned shor
     packet.ip.tot_len = htons(40);
     packet.ip.id = 0;
     packet.ip.tos = 0;
-    packet.ip.ttl = 0;
+    packet.ip.ttl = 128;
     packet.ip.frag_off = 0;
     packet.ip.protocol = IPPROTO_TCP;
     packet.ip.check = 0;
