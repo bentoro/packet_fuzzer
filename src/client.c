@@ -10,10 +10,10 @@
 #include <netinet/tcp.h>
 #include <time.h>
 
-#define BUFSIZE 1024
+#define PORT 8045
 #define SYN 0
 #define SYNACK 1
-#define PORT 8045
+#define BUFSIZE 1024
 
 unsigned short checksum(unsigned short *ptr, int nbytes);
 int generate_rand();
@@ -49,12 +49,23 @@ int main (int argc, char** argv){
     char *host, *bp, rbuf[BUFSIZE], sbuf[BUFSIZE];
     host = argv[1];
     port = PORT;
+
+    if(geteuid() != 0) {
+        printf("Must run as root\n");
+        exit(1);
+    }
+
     sd = socket(AF_INET, SOCK_STREAM,0);
+
     bzero((char *)&server, sizeof(struct sockaddr_in));
+
     server.sin_family = AF_INET;
     server.sin_port = htons(port);
+
     hp = gethostbyname(host);
+
     bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
+
     connect(sd, (struct sockaddr *)&server, sizeof(server));
 
     strncpy(sbuf, "hi", BUFSIZE);
@@ -69,10 +80,8 @@ int main (int argc, char** argv){
         bytes_to_read-=n;
     }
 
-    printf("%s\n", rbuf);
-    close(sd);
-    return(0);
     //tcp_send("192.168.1.86", "192.168.1.72", PORT, PORT, 0, 10000, SYN);
+
     return 0;
 }
 
@@ -118,23 +127,30 @@ void tcp_send(char *src_ip, char *dst_ip, unsigned short src_port, unsigned shor
     } else {
         packet.tcp.source = htons(src_port);
     }
-
-    //check if we are forging SEQ
     packet.tcp.seq = seq;
     //packet.tcp.seq = generate_rand(10000.0);
     packet.tcp.dest = htons(dst_port);
     packet.tcp.ack_seq = 0;
     packet.tcp.res1 = 0;
     packet.tcp.doff = 5;
+    if( flag == FIN){
+        packet.tcp.fin = 1;
+    } else {
+        packet.tcp.fin = 0;
+    }
     packet.tcp.fin = 0;
-    if(flag == SYN){
+    if(flag == SYN || flag == SYNACK){
         packet.tcp.syn = 1;
     } else {
         packet.tcp.syn = 0;
     }
     packet.tcp.rst = 0;
     packet.tcp.psh = 0;
-    packet.tcp.ack = 0;
+    if(flag == ACK || flag == SYNACK){
+        packet.tcp.ack = 1;
+    } else {
+        packet.tcp.ack = 0;
+      }
     packet.tcp.urg = 0;
     packet.tcp.res2 = 0;
     packet.tcp.window = htons(512);
