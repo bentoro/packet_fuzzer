@@ -26,7 +26,7 @@ struct tcp_packet{
     unsigned char payload[BUFSIZ];
 } tcp_packet;
 
-struct my_ip {
+/*struct my_ip {
 	u_int8_t	ip_vhl;
 #define IP_V(ip)	(((ip)->ip_vhl & 0xf0) >> 4)
 #define IP_HL(ip)	((ip)->ip_vhl & 0x0f)
@@ -41,17 +41,17 @@ struct my_ip {
 	u_int8_t	ip_p;
 	u_int16_t	ip_sum;
 	struct	in_addr ip_src,ip_dst;
-};
+};*/
 
 /* TCP header */
 typedef u_int tcp_seq;
 
-struct sniff_tcp {
-        u_short th_sport;               /* source port */
-        u_short th_dport;               /* destination port */
-        tcp_seq th_seq;                 /* sequence number */
-        tcp_seq th_ack;                 /* acknowledgement number */
-        u_char  th_offx2;               /* data offset, rsvd */
+/*struct sniff_tcp {
+        u_short th_sport;
+        u_short th_dport;
+        tcp_seq th_seq;
+        tcp_seq th_ack;
+        u_char  th_offx2;
 #define TH_OFF(th)      (((th)->th_offx2 & 0xf0) >> 4)
         u_char  th_flags;
         #define TH_FIN  0x01
@@ -63,10 +63,10 @@ struct sniff_tcp {
         #define TH_ECE  0x40
         #define TH_CWR  0x80
         #define TH_FLAGS        (TH_FIN|TH_SYN|TH_RST|TH_ACK|TH_URG|TH_ECE|TH_CWR)
-        u_short th_win;                 /* window */
-        u_short th_sum;                 /* checksum */
-        u_short th_urp;                 /* urgent pointer */
-};
+        u_short th_win;
+        u_short th_sum;
+        u_short th_urp;
+};*/
 
 
 uint16_t checksum (uint16_t *, int);
@@ -129,7 +129,6 @@ int Packetcapture(char *FILTER){
     }
 
     //open the network device
-    //BUFSIZ is defined in pcap.h
     if((interfaceinfo = pcap_open_live(interface_list->name, BUFSIZ, 1, -1, errorbuffer)) == NULL){
         printf("pcap_open_live(): %s\n", errorbuffer);
         exit(0);
@@ -151,9 +150,13 @@ int Packetcapture(char *FILTER){
 void ReadPacket(u_char* args, const struct pcap_pkthdr* pkthdr, const u_char* packet){
     //grab the type of packet
     struct ether_header *ethernet;
+    u_char dst_host[ETHER_ADDR_LEN], src_host[ETHER_ADDR_LEN];
     ethernet = (struct ether_header *)packet;
     u_int16_t type = ntohs(ethernet->ether_type);
-
+    //TODO: May not print the mac address not sure if really needed
+    //ether_dhost
+    //ether_shost
+    //ether_type
     if(type == ETHERTYPE_IP){
         ParseIP(args, pkthdr, packet);
     }
@@ -195,10 +198,11 @@ void ParseIP(u_char* args, const struct pcap_pkthdr* pkthdr, const u_char* packe
 
 }
 
-
 void ParseTCP(u_char* args, const struct pcap_pkthdr* pkthdr, const u_char* packet){
-    const struct sniff_tcp *tcp=0;
-    const struct my_ip *ip;
+    struct iphdr* ip;
+    //const struct sniff_tcp *tcp=0;
+    struct tcphdr *tcp;
+
     const u_char *payload;
 
     int size_ip;
@@ -207,11 +211,15 @@ void ParseTCP(u_char* args, const struct pcap_pkthdr* pkthdr, const u_char* pack
 
     printf("TCP Packet\n");
 
-    ip = (struct my_ip*)(packet + 14);
-    size_ip = IP_HL(ip)*4;
-
-    tcp = (struct sniff_tcp*)(packet + 14 + size_ip);
-    size_tcp = TH_OFF(tcp)*4;
+    ip = (struct iphdr*)(packet + 14);
+    //size_ip = IP_HL(ip)*4;
+    //tcp = (struct sniff_tcp*)(packet + 14 + size_ip);
+    //size_tcp = TH_OFF(tcp)*4;
+    //header length is IHL * 4
+    size_ip = ntohs(ip->ihl)*4;
+    tcp = (struct tcphdr*)(packet + 14 + size_ip);
+    //#define TH_OFF(th)      (((th)->th_offx2 & 0xf0) >> 4)
+    size_tcp = ntohs(tcp->doff)*4;
 
     if(size_tcp < 20){
         perror("TCP: Control packet length is incorrect");
@@ -222,7 +230,7 @@ void ParseTCP(u_char* args, const struct pcap_pkthdr* pkthdr, const u_char* pack
     printf("Destination port: %d\n", ntohs(tcp->th_dport));
     payload = (u_char *)(packet + 14 + size_ip + size_tcp);
 
-    size_payload = ntohs(ip->ip_len) - (size_ip + size_tcp);
+    size_payload = ntohs(ip->tot_len) - (size_ip + size_tcp);
 
     if(size_payload > 0){
         printf("Payload (%d bytes):\n", size_payload);
@@ -231,6 +239,13 @@ void ParseTCP(u_char* args, const struct pcap_pkthdr* pkthdr, const u_char* pack
 }
 
 void ParsePayload(const u_char *payload, int len){
+    struct iphdr* ip;
+    struct tcphdr *tcp;
+    //const struct sniff_tcp *tcp=0;
+    //const struct my_ip *ip;
+    printf("Payload: \n");
+    printf("%s", payload);
+    printf("%08X", payload); //print payload in HEX
 }
 
 //TODO: add to seperate library once working!
