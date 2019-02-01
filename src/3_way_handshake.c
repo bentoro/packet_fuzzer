@@ -15,7 +15,11 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-
+#define SYN 0
+#define ACK 1
+#define SYNACK 2
+#define FIN 3
+#define PSHACK 4
 #define IP4_HDRLEN 20 // Length of IPv4 Header
 #define TCP_HDRLEN 20 // Length of TCP Header
 
@@ -24,48 +28,6 @@ struct tcp_packet {
   struct tcphdr tcphdr;
   unsigned char payload[BUFSIZ];
 } tcp_packet;
-
-/*struct my_ip {
-        u_int8_t	ip_vhl;
-#define IP_V(ip)	(((ip)->ip_vhl & 0xf0) >> 4)
-#define IP_HL(ip)	((ip)->ip_vhl & 0x0f)
-        u_int8_t	ip_tos;
-        u_int16_t	ip_len;
-        u_int16_t	ip_id;
-        u_int16_t	ip_off;
-#define	IP_DF 0x4000
-#define	IP_MF 0x2000
-#define	IP_OFFMASK 0x1fff
-        u_int8_t	ip_ttl;
-        u_int8_t	ip_p;
-        u_int16_t	ip_sum;
-        struct	in_addr ip_src,ip_dst;
-};*/
-
-/* TCP header */
-typedef u_int tcp_seq;
-
-/*struct sniff_tcp {
-        u_short th_sport;
-        u_short th_dport;
-        tcp_seq th_seq;
-        tcp_seq th_ack;
-        u_char  th_offx2;
-#define TH_OFF(th)      (((th)->th_offx2 & 0xf0) >> 4)
-        u_char  th_flags;
-        #define TH_FIN  0x01
-        #define TH_SYN  0x02
-        #define TH_RST  0x04
-        #define TH_PUSH 0x08
-        #define TH_ACK  0x10
-        #define TH_URG  0x20
-        #define TH_ECE  0x40
-        #define TH_CWR  0x80
-        #define TH_FLAGS (TH_FIN|TH_SYN|TH_RST|TH_ACK|TH_URG|TH_ECE|TH_CWR)
-        u_short th_win;
-        u_short th_sum;
-        u_short th_urp;
-};*/
 
 uint16_t checksum(uint16_t *, int);
 uint16_t tcp4_checksum(struct ip, struct tcphdr);
@@ -76,20 +38,18 @@ int generate_rand(double value);
 struct addrinfo set_hints(int family, int socktype, int flags);
 struct ifreq search_interface(char *ifc);
 char *resolve_host(char *target, struct addrinfo hints);
-void send_raw_tcp_packet(int src, int dst, struct ifreq interface, char *src_ip,
-                         char *dst_ip);
-
+void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, int flags);
 int Packetcapture(char *FILTER);
-void ReadPacket(u_char *args, const struct pcap_pkthdr *pkthdr,
-                const u_char *packet);
-void ParseTCP(u_char *args, const struct pcap_pkthdr *pkthdr,
-              const u_char *packet);
-void ParseIP(u_char *args, const struct pcap_pkthdr *pkthdr,
-             const u_char *packet);
+void ReadPacket(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet);
+void ParseTCP(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet);
+void ParseIP(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet);
 void ParsePayload(const u_char *payload, int len);
 
+int ack;
+int seq;
+
 int main(int argc, char **argv) {
-  /*struct addrinfo hints;
+  struct addrinfo hints;
   char *target, *src_ip, *dst_ip;
   struct ifreq ifr;
 
@@ -107,13 +67,17 @@ int main(int argc, char **argv) {
 
   strcpy (src_ip, "192.168.1.86");
   strcpy (target, "192.168.1.72");
-
+  char src[BUFSIZ];
+  char dst[BUFSIZ];
+  strcpy (src, "192.168.1.86");
+  strcpy (dst, "192.168.1.72");
   hints = set_hints(AF_INET, SOCK_STREAM, hints.ai_flags | AI_CANONNAME);
 
   // Resolve target using getaddrinfo().
   dst_ip = resolve_host(target, hints);
-  send_raw_tcp_packet(0, 8040, ifr, src_ip, dst_ip);*/
-  Packetcapture("host 192.168.1.72 and tcp");
+  send_raw_tcp_packet(100, 8040, ifr, src,dst, 0, 0, SYN);
+  send_raw_tcp_packet(100, 8040, ifr, src,dst, 1, 1, ACK);
+  //Packetcapture("host 192.168.1.72 and tcp");
   return (EXIT_SUCCESS);
 }
 
@@ -149,8 +113,7 @@ int Packetcapture(char *FILTER) {
   return 0;
 }
 
-void ReadPacket(u_char *args, const struct pcap_pkthdr *pkthdr,
-                const u_char *packet) {
+void ReadPacket(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
   // grab the type of packet
   struct ether_header *ethernet;
   u_char dst_host[ETHER_ADDR_LEN], src_host[ETHER_ADDR_LEN];
@@ -187,6 +150,7 @@ void ParseIP(u_char *args, const struct pcap_pkthdr *pkthdr,
   version = ip->version;
   off = ntohs(ip->frag_off);
 
+  printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
   if (version != 4) {
     perror("Unknown error");
     exit(1);
@@ -197,13 +161,11 @@ void ParseIP(u_char *args, const struct pcap_pkthdr *pkthdr,
     perror("Truncated IP");
     exit(1);
   } else if (ip->protocol == IPPROTO_TCP) {
-    printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
     ParseTCP(args, pkthdr, packet);
   }
 }
 
-void ParseTCP(u_char *args, const struct pcap_pkthdr *pkthdr,
-              const u_char *packet) {
+void ParseTCP(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
   struct iphdr *ip;
   // const struct sniff_tcp *tcp=0;
   struct tcphdr *tcp;
@@ -212,7 +174,7 @@ void ParseTCP(u_char *args, const struct pcap_pkthdr *pkthdr,
   int size_tcp;
   int size_payload;
 
-  printf("TCP Packet\n");
+  printf("\nTCP Packet\n");
 
   ip = (struct iphdr *)(packet + 14);
   // size_ip = IP_HL(ip)*4;
@@ -229,11 +191,19 @@ void ParseTCP(u_char *args, const struct pcap_pkthdr *pkthdr,
     perror("TCP: Control packet length is incorrect");
     exit(1);
   }
-
-  printf("Source port: %d\n", ntohs(tcp->th_sport));
-  printf("Destination port: %d\n", ntohs(tcp->th_dport));
+  //dont print if rst packet
+  if(!tcp->rst){
+      printf("Source port: %d\n", ntohs(tcp->th_sport));
+      printf("Destination port: %d\n", ntohs(tcp->th_dport));
+      printf("Sequence #: %u\n", ntohs(tcp->seq));
+      printf("Acknowledgement: %u \n", ntohs(tcp->ack_seq));
+      printf("Syn: %d\n", tcp->syn);
+      //printf("Fin: %d\n", tcp->fin);
+      //printf("Rst: %d\n", tcp->rst);
+      printf("Psh: %d\n", tcp->psh);
+      printf("Ack: %d\n", tcp->ack);
+  }
   payload = (u_char *)(packet + 14 + size_ip + size_tcp);
-
   size_payload = ntohs(ip->tot_len) - (size_ip + size_tcp);
 
   if (size_payload > 0) {
@@ -291,8 +261,7 @@ struct addrinfo set_hints(int family, int socktype, int flags) {
 }
 
 struct ifreq search_interface(char *ifc) {
-  // dont need to return socket as it is only used to search for the interface
-  // index
+  // dont need to return socket as it is only used to search for the interface index
   char *interface = (char *)malloc(40 * sizeof(char));
   memset(interface, 0, 40 * sizeof(char));
   struct ifreq ifr;
@@ -451,116 +420,105 @@ int generate_rand(double value) {
   return 1 + (int)(value * rand() / RAND_MAX + 1.0);
 }
 
-void send_raw_tcp_packet(int src, int dst, struct ifreq interface, char *src_ip,
-                         char *dst_ip) {
+void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, int flags) {
   struct sockaddr_in sin;
   int i, *ip_flags, *tcp_flags, status, sending_socket;
   const int on = 1;
   struct tcp_packet packet;
-
-  // Allocate memory for various arrays.
-  // packet = allocate_ustrmem (IP_MAXPACKET);
   ip_flags = (int *)calloc(4, sizeof(int));
   tcp_flags = (int *)calloc(8, sizeof(int));
 
   // IPv4 header
-  // IPv4 header length (4 bits): Number of 32-bit words in header = 5
-  packet.iphdr.ip_hl = IP4_HDRLEN / sizeof(uint32_t);
-  // Internet Protocol version (4 bits): IPv4
-  packet.iphdr.ip_v = 4;
-  // Type of service (8 bits)
-  packet.iphdr.ip_tos = 0;
-  // Total length of datagram (16 bits): IP header + TCP header
-  packet.iphdr.ip_len = htons(IP4_HDRLEN + TCP_HDRLEN);
-  // ID sequence number (16 bits): unused, since single datagram
-  packet.iphdr.ip_id = htons(0);
-
-  // Flags, and Fragmentation offset (3, 13 bits): 0 since single datagram
-  // Zero (1 bit)
-  ip_flags[0] = 0;
-  // Do not fragment flag (1 bit)
-  ip_flags[1] = 0;
-  // More fragments following flag (1 bit)
-  ip_flags[2] = 0;
-  // Fragmentation offset (13 bits)
-  ip_flags[3] = 0;
-  packet.iphdr.ip_off = htons((ip_flags[0] << 15) + (ip_flags[1] << 14) +
-                              (ip_flags[2] << 13) + ip_flags[3]);
-
-  // Time-to-Live (8 bits): default to maximum value
-  packet.iphdr.ip_ttl = 255;
-  // Transport layer protocol (8 bits): 6 for TCP
-  packet.iphdr.ip_p = IPPROTO_TCP;
-
+  packet.iphdr.ip_hl = IP4_HDRLEN / sizeof(uint32_t); //header length = 5
+  packet.iphdr.ip_v = 4; //version = 4
+  packet.iphdr.ip_tos = 0; //TOS
+  packet.iphdr.ip_len = htons(IP4_HDRLEN + TCP_HDRLEN); //length: IP header + TCP header
+  packet.iphdr.ip_id = htons(0); //ID
+  ip_flags[0] = 0; //Zero
+  ip_flags[1] = 0; //Don't frag
+  ip_flags[2] = 0; //More frag
+  ip_flags[3] = 0; //Frag offset
+  packet.iphdr.ip_off = htons((ip_flags[0] << 15) + (ip_flags[1] << 14) +(ip_flags[2] << 13) + ip_flags[3]);
+  packet.iphdr.ip_ttl = 255; //TTL
+  packet.iphdr.ip_p = IPPROTO_TCP; //Protocol
+  printf("src_ip: %s\n", src_ip);
+  printf("dst_ip: %s\n", dst_ip);
   // Source IPv4 address (32 bits)
   if ((status = inet_pton(AF_INET, src_ip, &(packet.iphdr.ip_src))) != 1) {
-    fprintf(stderr, "inet_pton() failed.\nError message: %s", strerror(status));
-    exit(EXIT_FAILURE);
+      perror("inet_pton, src_ip");
+      exit(EXIT_FAILURE);
   }
   // Destination IPv4 address (32 bits)
   if ((status = inet_pton(AF_INET, dst_ip, &(packet.iphdr.ip_dst))) != 1) {
-    fprintf(stderr, "inet_pton() failed.\nError message: %s", strerror(status));
+      perror("inet_pton, dst_ip");
     exit(EXIT_FAILURE);
   }
 
-  // IPv4 header checksum (16 bits): set to 0 when calculating checksum
   packet.iphdr.ip_sum = 0;
   packet.iphdr.ip_sum = checksum((uint16_t *)&packet.iphdr, IP4_HDRLEN);
 
   // TCP header
-  // Source port number (16 bits)
-  if (src == 0) {
+  if (src_port == 0) {
     packet.tcphdr.th_sport = generate_rand(65535.0);
   } else {
-    packet.tcphdr.th_sport = src;
+    packet.tcphdr.th_sport = src_port;
   }
-  // Destination port number (16 bits)
-  if (dst == 0) {
+  if (dst_port == 0) {
     packet.tcphdr.th_dport = generate_rand(65535.0);
   } else {
-    packet.tcphdr.th_dport = htons(dst);
+    packet.tcphdr.th_dport = htons(dst_port);
   }
-  // Sequence number (32 bits)
-  packet.tcphdr.th_seq = htonl(0);
-  // Acknowledgement number (32 bits): 0 in first packet of SYN/ACK process
-  packet.tcphdr.th_ack = htonl(0);
-  // Reserved (4 bits): should be 0
-  packet.tcphdr.th_x2 = 0;
-  // Data offset (4 bits): size of TCP header in 32-bit words
-  packet.tcphdr.th_off = TCP_HDRLEN / 4;
+  if(seq != 0){
+    packet.tcphdr.th_seq = htonl(seq); //SEQ
+  } else {
+    packet.tcphdr.th_seq = htonl(0); //SEQ
+  }
+  if(ack != 0){
+    packet.tcphdr.th_ack = htonl(ack); //ACK - 0 for first packet
+  } else {
+    packet.tcphdr.th_ack = htonl(0); //ACK - 0 for first packet
+  }
+  packet.tcphdr.th_x2 = 0; //Reserved
+  packet.tcphdr.th_off = TCP_HDRLEN / 4; //Offset
 
   // Flags (8 bits)
-  // FIN flag (1 bit)
-  tcp_flags[0] = 0;
-  // SYN flag (1 bit): set to 1
-  tcp_flags[1] = 1;
-  // RST flag (1 bit)
-  tcp_flags[2] = 0;
-  // PSH flag (1 bit)
-  tcp_flags[3] = 0;
-  // ACK flag (1 bit)
-  tcp_flags[4] = 0;
-  // URG flag (1 bit)
-  tcp_flags[5] = 0;
-  // ECE flag (1 bit)
-  tcp_flags[6] = 0;
-  // CWR flag (1 bit)
-  tcp_flags[7] = 0;
+  if(flags == FIN){
+    tcp_flags[0] = 1; //Fin
+  } else {
+    tcp_flags[0] = 0; //Fin
+  }
+  if(flags == SYN){
+    tcp_flags[1] = 1; //SYN
+  } else {
+    tcp_flags[1] = 0; //SYN
+  }
+  if(flags == PSHACK){
+    tcp_flags[3] = 1; //PSH
+  } else {
+    tcp_flags[3] = 0; //PSH
+  }
+  if(flags == PSHACK){
+    tcp_flags[4] = 1; //ACK
+  } else if(flags == ACK){
+    tcp_flags[4] = 1; //ACK
+  }else {
+    tcp_flags[4] = 0; //ACK
+  }
+  tcp_flags[2] = 0; //RST
+  tcp_flags[5] = 0; //URG
+  tcp_flags[6] = 0; //ECE
+  tcp_flags[7] = 0; //CWR
   packet.tcphdr.th_flags = 0;
   for (i = 0; i < 8; i++) {
     packet.tcphdr.th_flags += (tcp_flags[i] << i);
   }
 
-  // Window size (16 bits)
-  packet.tcphdr.th_win = htons(65535);
-  // Urgent pointer (16 bits): 0 (only valid if URG flag is set)
-  packet.tcphdr.th_urp = htons(0);
-  // TCP checksum (16 bits)
+  packet.tcphdr.th_win = htons(65535); //Window size
+  packet.tcphdr.th_urp = htons(0); //Urgent Pointer
   packet.tcphdr.th_sum = tcp4_checksum(packet.iphdr, packet.tcphdr);
-  // Prepare packet.
+
   // Empty the payload
   memset(packet.payload, 0, sizeof(packet.payload));
-
   // The kernel is going to prepare layer 2 information (ethernet frame header)
   // for us. For that, we need to specify a destination for the kernel in order
   // for it to decide where to send the raw datagram. We fill in a struct
@@ -583,15 +541,13 @@ void send_raw_tcp_packet(int src, int dst, struct ifreq interface, char *src_ip,
   }
 
   // Bind socket to interface index.
-  if (setsockopt(sending_socket, SOL_SOCKET, SO_BINDTODEVICE, &interface,
-                 sizeof(interface)) < 0) {
+  if (setsockopt(sending_socket, SOL_SOCKET, SO_BINDTODEVICE, &interface,sizeof(interface)) < 0) {
     perror("setsockopt() failed to bind to interface ");
     exit(EXIT_FAILURE);
   }
 
   // Send packet.
-  if (sendto(sending_socket, &packet, IP4_HDRLEN + TCP_HDRLEN, 0,
-             (struct sockaddr *)&sin, sizeof(struct sockaddr)) < 0) {
+  if (sendto(sending_socket, &packet, IP4_HDRLEN + TCP_HDRLEN, 0, (struct sockaddr *)&sin, sizeof(struct sockaddr)) < 0) {
     perror("sendto() failed ");
     exit(EXIT_FAILURE);
   }
@@ -600,8 +556,6 @@ void send_raw_tcp_packet(int src, int dst, struct ifreq interface, char *src_ip,
   close(sending_socket);
 
   // Free allocated memory.
-  free(src_ip);
-  free(dst_ip);
   free(ip_flags);
   free(tcp_flags);
 }
