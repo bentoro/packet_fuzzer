@@ -23,6 +23,10 @@
 #define IP4_HDRLEN 20 // Length of IPv4 Header
 #define TCP_HDRLEN 20 // Length of TCP Header
 
+struct packet_info{
+
+} packet_info;
+
 struct tcp_packet {
   struct ip iphdr;
   struct tcphdr tcphdr;
@@ -39,11 +43,11 @@ struct addrinfo set_hints(int family, int socktype, int flags);
 struct ifreq search_interface(char *ifc);
 char *resolve_host(char *target, struct addrinfo hints);
 void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, int flags);
-int Packetcapture(char *FILTER);
+int Packetcapture(char *FILTER, struct packet_info packet_info);
 void ReadPacket(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet);
-void ParseTCP(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet);
-void ParseIP(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet);
-void ParsePayload(const u_char *payload, int len);
+void ParseTCP(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,const u_char *packet);
+void ParseIP(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,const u_char *packet);
+void ParsePayload(struct packet_info *packet_info, const u_char *payload, int len);
 
 int ack;
 int seq;
@@ -67,21 +71,22 @@ int main(int argc, char **argv) {
 
   strcpy (src_ip, "192.168.1.86");
   strcpy (target, "192.168.1.72");
-  char src[BUFSIZ];
+  /*char src[BUFSIZ];
   char dst[BUFSIZ];
   strcpy (src, "192.168.1.86");
-  strcpy (dst, "192.168.1.72");
+  strcpy (dst, "192.168.1.72");*/
   hints = set_hints(AF_INET, SOCK_STREAM, hints.ai_flags | AI_CANONNAME);
 
   // Resolve target using getaddrinfo().
   dst_ip = resolve_host(target, hints);
-  send_raw_tcp_packet(100, 8040, ifr, src,dst, 0, 0, SYN);
-  send_raw_tcp_packet(100, 8040, ifr, src,dst, 1, 1, ACK);
+  send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 0, 0, SYN);
+  send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, 1, ACK);
   //Packetcapture("host 192.168.1.72 and tcp");
   return (EXIT_SUCCESS);
 }
 
-int Packetcapture(char *FILTER) {
+int Packetcapture(char *FILTER, struct packet_info packet_info) {
+//int Packetcapture(char *FILTER) {
   pcap_t *interfaceinfo;
   char errorbuffer[PCAP_ERRBUF_SIZE];
   struct bpf_program fp; // holds fp program info
@@ -109,27 +114,30 @@ int Packetcapture(char *FILTER) {
     perror("pcap_setfilter");
   }
 
-  pcap_loop(interfaceinfo, -1, ReadPacket, NULL);
+  pcap_loop(interfaceinfo, -1, ReadPacket, (u_char*)&packet_info);
   return 0;
 }
 
 void ReadPacket(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
+
+  struct packet_info* packet_info = NULL;
+  packet_info = (struct filter *) args;
   // grab the type of packet
   struct ether_header *ethernet;
   u_char dst_host[ETHER_ADDR_LEN], src_host[ETHER_ADDR_LEN];
   ethernet = (struct ether_header *)packet;
   u_int16_t type = ntohs(ethernet->ether_type);
+
   // TODO: May not print the mac address not sure if really needed
   // ether_dhost
   // ether_shost
   // ether_type
   if (type == ETHERTYPE_IP) {
-    ParseIP(args, pkthdr, packet);
+    ParseIP(packet_info, pkthdr, packet);
   }
 }
 
-void ParseIP(u_char *args, const struct pcap_pkthdr *pkthdr,
-             const u_char *packet) {
+void ParseIP(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
   // const struct my_ip* ip;
   struct iphdr *ip;
   u_int length = pkthdr->len;
@@ -161,11 +169,11 @@ void ParseIP(u_char *args, const struct pcap_pkthdr *pkthdr,
     perror("Truncated IP");
     exit(1);
   } else if (ip->protocol == IPPROTO_TCP) {
-    ParseTCP(args, pkthdr, packet);
+    ParseTCP(packet_info, pkthdr, packet);
   }
 }
 
-void ParseTCP(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
+void ParseTCP(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
   struct iphdr *ip;
   // const struct sniff_tcp *tcp=0;
   struct tcphdr *tcp;
@@ -208,11 +216,11 @@ void ParseTCP(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packe
 
   if (size_payload > 0) {
     printf("Payload (%d bytes):\n", size_payload);
-    ParsePayload(payload, size_payload);
+    ParsePayload(packet_info,payload, size_payload);
   }
 }
 
-void ParsePayload(const u_char *payload, int len) {
+void ParsePayload(struct packet_info *packet_info, const u_char *payload, int len) {
   struct iphdr *ip;
   struct tcphdr *tcp;
   // const struct sniff_tcp *tcp=0;
