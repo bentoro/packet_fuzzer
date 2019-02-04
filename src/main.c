@@ -28,11 +28,27 @@ int main(int argc, char **argv) {
 
   // Resolve target using getaddrinfo().
   dst_ip = resolve_host(target, hints);
-  packet_info.ack = 9;
-  packet_info.seq = 9;
-  packet_info.protocol = TCP;
   send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 0, 0, SYN);
-  packet_capture("host 192.168.1.72 and tcp", packet_info);
+  packet_info = packet_capture("host 192.168.1.72 and tcp and port 8000", packet_info);
+  if(packet_info.protocol == TCP){
+    printf("TCP PACKET RECEIEVED\n");
+  }else if(packet_info.protocol == UDP){
+    printf("UDP PACKET RECEIEVED\n");
+  }else if(packet_info.protocol == ICMP){
+    printf("ICMP PACKET RECEIEVED\n");
+  }
+
+  if(packet_info.flag == SYN){
+    printf("SYN FLAG\n");
+  }else if(packet_info.flag == ACK){
+    printf("ACK FLAG\n");
+  }else if(packet_info.flag == PSHACK){
+    printf("PSH ACK FLAG\n");
+  }else if(packet_info.flag == SYNACK){
+    printf("SYN ACK FLAG\n");
+  }else if(packet_info.flag == FIN){
+    printf("FIN FLAG\n");
+  }
   printf("ack: %d\n",packet_info.ack);
   printf("seq: %d\n",packet_info.seq);
   //send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, 1, ACK);

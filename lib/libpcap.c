@@ -1,8 +1,7 @@
 #include "libpcap.h"
 
-int packet_capture(char *FILTER, struct packet_info packet_info) {
+struct packet_info packet_capture(char *FILTER, struct packet_info packet_info) {
 //int Packetcapture(char *FILTER) {
-  pcap_t *interfaceinfo;
   char errorbuffer[PCAP_ERRBUF_SIZE];
   struct bpf_program fp; // holds fp program info
   pcap_if_t *interface_list;
@@ -30,7 +29,7 @@ int packet_capture(char *FILTER, struct packet_info packet_info) {
   }
 
   pcap_loop(interfaceinfo, -1, read_packet, (u_char*)&packet_info);
-  return 0;
+  return packet_info;
 }
 
 void read_packet(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
@@ -98,6 +97,7 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
   int size_payload;
 
   printf("\nTCP Packet\n");
+  packet_info->protocol = TCP;
 
   ip = (struct iphdr *)(packet + 14);
   // size_ip = IP_HL(ip)*4;
@@ -119,24 +119,25 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
       printf("Source port: %d\n", ntohs(tcp->th_sport));
       printf("Destination port: %d\n", ntohs(tcp->th_dport));
       printf("Sequence #: %u\n", ntohs(tcp->seq));
+      packet_info->seq = ntohs(tcp->seq);
       printf("Acknowledgement: %u \n", ntohs(tcp->ack_seq));
-      packet_info->ack = tcp->ack_seq;
+      packet_info->ack = ntohs(tcp->ack_seq);
       if(tcp->syn){
-          printf("Syn: %d\n", tcp->syn);
+          printf("Syn: true\n");
           packet_info->flag = SYN;
       }else if (tcp->fin){
-          printf("Fin: %d\n", tcp->fin);
+          printf("Fin: true\n");
           packet_info->flag = FIN;
       }else if(tcp->rst){
-          printf("Rst: %d\n", tcp->rst);
+          printf("Rst: true\n");
           packet_info->flag = RST;
       }else if(tcp->psh && tcp->ack){
-          printf("Ack: %d\n", tcp->ack);
-          printf("Psh: %d\n", tcp->psh);
+          printf("Ack: true\n");
+          printf("Psh: true\n");
           packet_info->flag = PSHACK;
       }else if (tcp->ack){
           packet_info->flag = ACK;
-          printf("Ack: %d\n", tcp->ack);
+          printf("Ack: true\n");
       }
   }
   payload = (u_char *)(packet + 14 + size_ip + size_tcp);
@@ -146,6 +147,7 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
     printf("Payload (%d bytes):\n", size_payload);
     parse_payload(packet_info,payload, size_payload);
   }
+  pcap_breakloop(interfaceinfo);
 }
 
 void parse_payload(struct packet_info *packet_info, const u_char *payload, int len) {

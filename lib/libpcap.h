@@ -8,7 +8,9 @@
 #include "raw_socket_wrappers.h"
 
 
-int packet_capture(char *FILTER, struct packet_info packet_info);
+pcap_t *interfaceinfo;
+
+struct packet_info packet_capture(char *FILTER, struct packet_info packet_info);
 void read_packet(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet);
 void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,const u_char *packet);
 void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,const u_char *packet);
