@@ -1,5 +1,5 @@
-main: 3_way_handshake.c
-	gcc -g -o main 3_way_handshake.c -lpcap
+main: main.c ../lib/libpcap.c ../lib/raw_socket_wrappers.c
+	gcc -g -o main main.c ../lib/libpcap.c ../lib/raw_socket_wrappers.c -lpcap
 	gcc -g -o svr server.c
 	gcc -g -o clt client.c
 clean:
