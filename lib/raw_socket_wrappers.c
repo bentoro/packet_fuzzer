@@ -203,6 +203,7 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
   int i, *ip_flags, *tcp_flags, status, sending_socket;
   const int on = 1;
   struct tcp_packet packet;
+  memset(&packet, 0, sizeof(struct tcp_packet));
   ip_flags = (int *)calloc(4, sizeof(int));
   tcp_flags = (int *)calloc(8, sizeof(int));
 
@@ -246,43 +247,57 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
   } else {
     packet.tcphdr.th_dport = htons(dst_port);
   }
-  if(seq != 0){
-    packet.tcphdr.th_seq = htonl(seq); //SEQ
-  } else {
-    packet.tcphdr.th_seq = htonl(0); //SEQ
-  }
-  if(ack != 0){
-    packet.tcphdr.th_ack = htonl(ack); //ACK - 0 for first packet
-  } else {
-    packet.tcphdr.th_ack = htonl(0); //ACK - 0 for first packet
-  }
+  packet.tcphdr.th_seq = htonl(seq); //SEQ
+  printf("SEQ: %u \n", ntohl(packet.tcphdr.th_seq));
+  packet.tcphdr.th_ack = htonl(ack); //ACK - 0 for first packet
+  printf("ACK: %u \n", ntohl(packet.tcphdr.th_ack));
   packet.tcphdr.th_x2 = 0; //Reserved
   packet.tcphdr.th_off = TCP_HDRLEN / 4; //Offset
 
   // Flags (8 bits)
-  if(flags == FIN){
-    tcp_flags[0] = 1; //Fin
-  } else {
-    tcp_flags[0] = 0; //Fin
-  }
-  if(flags == SYN){
-    tcp_flags[1] = 1; //SYN
-  } else {
+  if(flags == PSHACK){
+    tcp_flags[0] = 0; //FIN
     tcp_flags[1] = 0; //SYN
-  }
-  if(flags == PSHACK){
     tcp_flags[3] = 1; //PSH
-  } else {
+    tcp_flags[4] = 1; //ACK
+    tcp_flags[2] = 0; //RST
+  }else if(flags == SYNACK){
+    tcp_flags[0] = 0; //FIN
+    tcp_flags[1] = 1; //SYN
     tcp_flags[3] = 0; //PSH
-  }
-  if(flags == PSHACK){
     tcp_flags[4] = 1; //ACK
-  } else if(flags == ACK){
+    tcp_flags[2] = 0; //RST
+  }else if(flags == FINACK){
+    tcp_flags[0] = 1; //FIN
+    tcp_flags[1] = 0; //SYN
+    tcp_flags[3] = 0; //PSH
     tcp_flags[4] = 1; //ACK
-  }else {
+    tcp_flags[2] = 0; //RST
+  }else if(flags == FIN){
+    tcp_flags[0] = 1; //FIN
+    tcp_flags[1] = 0; //SYN
+    tcp_flags[3] = 0; //PSH
     tcp_flags[4] = 0; //ACK
+    tcp_flags[2] = 0; //RST
+  } else if(flags == SYN){
+    tcp_flags[0] = 0; //FIN
+    tcp_flags[1] = 1; //SYN
+    tcp_flags[3] = 0; //PSH
+    tcp_flags[4] = 0; //ACK
+    tcp_flags[2] = 0; //RST
+  }else if(flags == ACK){
+    tcp_flags[0] = 0; //FIN
+    tcp_flags[1] = 0; //SYN
+    tcp_flags[3] = 0; //PSH
+    tcp_flags[4] = 1; //ACK
+    tcp_flags[2] = 0; //RST
+  }else if(flags == RST){
+    tcp_flags[0] = 0; //FIN
+    tcp_flags[1] = 0; //SYN
+    tcp_flags[3] = 0; //PSH
+    tcp_flags[4] = 0; //ACK
+    tcp_flags[2] = 1; //RST
   }
-  tcp_flags[2] = 0; //RST
   tcp_flags[5] = 0; //URG
   tcp_flags[6] = 0; //ECE
   tcp_flags[7] = 0; //CWR
@@ -291,7 +306,7 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
     packet.tcphdr.th_flags += (tcp_flags[i] << i);
   }
 
-  packet.tcphdr.th_win = htons(65535); //Window size
+  packet.tcphdr.th_win = htons(29200); //Window size
   packet.tcphdr.th_urp = htons(0); //Urgent Pointer
   packet.tcphdr.th_sum = tcp4_checksum(packet.iphdr, packet.tcphdr);
 
@@ -329,10 +344,9 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
     perror("sendto() failed ");
     exit(EXIT_FAILURE);
   }
-
+  printf("Packet sent\n");
   // Close socket descriptor.
-  close(sending_socket);
-
+  //close(sending_socket);
   // Free allocated memory.
   free(ip_flags);
   free(tcp_flags);

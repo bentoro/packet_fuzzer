@@ -26,6 +26,7 @@
 #define FIN 3
 #define RST 4
 #define PSHACK 5
+#define FINACK 6
 #define TCP 7
 #define UDP 8
 #define ICMP 9
@@ -47,6 +48,8 @@ struct tcp_packet {
   unsigned char payload[BUFSIZ];
 } tcp_packet;
 
+struct packet_info packet_info;
+
 uint16_t checksum(uint16_t *, int);
 uint16_t tcp4_checksum(struct ip, struct tcphdr);
 int generate_rand(double value);
@@ -54,5 +57,4 @@ struct addrinfo set_hints(int family, int socktype, int flags);
 struct ifreq search_interface(char *ifc);
 char *resolve_host(char *target, struct addrinfo hints);
 void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, int flags);
-
 #endif

@@ -72,7 +72,7 @@ void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
   version = ip->version;
   off = ntohs(ip->frag_off);
 
-  printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+  //printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
   if (version != 4) {
     perror("Unknown error");
     exit(1);
@@ -95,7 +95,12 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
   int size_ip;
   int size_tcp;
   int size_payload;
-
+  struct addrinfo hints;
+  char *target, *src_ip, *dst_ip;
+  struct ifreq ifr;
+  target = (char *) calloc (40, sizeof(char));
+  src_ip = (char *) calloc (INET_ADDRSTRLEN, sizeof(char));
+  dst_ip = (char *) calloc (INET_ADDRSTRLEN, sizeof(char));
   printf("\nTCP Packet\n");
   packet_info->protocol = TCP;
 
@@ -118,11 +123,33 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
   if(!tcp->rst){
       printf("Source port: %d\n", ntohs(tcp->th_sport));
       printf("Destination port: %d\n", ntohs(tcp->th_dport));
-      printf("Sequence #: %u\n", ntohs(tcp->seq));
-      packet_info->seq = ntohs(tcp->seq);
-      printf("Acknowledgement: %u \n", ntohs(tcp->ack_seq));
-      packet_info->ack = ntohs(tcp->ack_seq);
-      if(tcp->syn){
+      printf("Sequence #: %u\n", ntohl(tcp->seq));
+      packet_info->seq = ntohl(tcp->seq);
+      printf("Acknowledgement: %u \n", ntohl(tcp->ack_seq));
+      packet_info->ack = ntohl(tcp->ack_seq);
+      if(tcp->fin && tcp->ack){
+          printf("FinAck: true\n");
+          packet_info->flag = FINACK;
+      }else if(tcp->syn && tcp->ack){
+
+
+          // Interface to send packet through.
+          ifr = search_interface("wlp2s0");
+
+          strcpy (src_ip, "192.168.1.86");
+          strcpy (target, "192.168.1.72");
+          hints = set_hints(AF_INET, SOCK_STREAM, hints.ai_flags | AI_CANONNAME);
+
+          // Resolve target using getaddrinfo().
+          dst_ip = resolve_host(target, hints);
+
+          send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), ACK);
+          packet_info->flag = SYNACK;
+          printf("SynAck: true\n");
+      }else if(tcp->psh && tcp->ack){
+          printf("PshAck: true\n");
+          packet_info->flag = PSHACK;
+      }else if(tcp->syn){
           printf("Syn: true\n");
           packet_info->flag = SYN;
       }else if (tcp->fin){
@@ -131,22 +158,19 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
       }else if(tcp->rst){
           printf("Rst: true\n");
           packet_info->flag = RST;
-      }else if(tcp->psh && tcp->ack){
-          printf("Ack: true\n");
-          printf("Psh: true\n");
-          packet_info->flag = PSHACK;
       }else if (tcp->ack){
           packet_info->flag = ACK;
           printf("Ack: true\n");
       }
   }
-  payload = (u_char *)(packet + 14 + size_ip + size_tcp);
+
+  /*payload = (u_char *)(packet + 14 + size_ip + size_tcp);
   size_payload = ntohs(ip->tot_len) - (size_ip + size_tcp);
 
   if (size_payload > 0) {
     printf("Payload (%d bytes):\n", size_payload);
-    parse_payload(packet_info,payload, size_payload);
-  }
+    //parse_payload(packet_info,payload, size_payload);
+  }*/
   pcap_breakloop(interfaceinfo);
 }
 
