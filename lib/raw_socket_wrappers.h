@@ -48,6 +48,11 @@ struct tcp_packet {
   unsigned char payload[BUFSIZ];
 } tcp_packet;
 
+
+int seq;
+struct addrinfo hints;
+char *target, *src_ip, *dst_ip;
+struct ifreq ifr;
 struct packet_info packet_info;
 
 uint16_t checksum(uint16_t *, int);

@@ -89,18 +89,12 @@ void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
 
 void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
   struct iphdr *ip;
-  // const struct sniff_tcp *tcp=0;
   struct tcphdr *tcp;
   const u_char *payload;
   int size_ip;
   int size_tcp;
   int size_payload;
-  struct addrinfo hints;
-  char *target, *src_ip, *dst_ip;
-  struct ifreq ifr;
-  target = (char *) calloc (40, sizeof(char));
-  src_ip = (char *) calloc (INET_ADDRSTRLEN, sizeof(char));
-  dst_ip = (char *) calloc (INET_ADDRSTRLEN, sizeof(char));
+
   printf("\nTCP Packet\n");
   packet_info->protocol = TCP;
 
@@ -131,18 +125,7 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
           printf("FinAck: true\n");
           packet_info->flag = FINACK;
       }else if(tcp->syn && tcp->ack){
-
-
           // Interface to send packet through.
-          ifr = search_interface("wlp2s0");
-
-          strcpy (src_ip, "192.168.1.86");
-          strcpy (target, "192.168.1.72");
-          hints = set_hints(AF_INET, SOCK_STREAM, hints.ai_flags | AI_CANONNAME);
-
-          // Resolve target using getaddrinfo().
-          dst_ip = resolve_host(target, hints);
-
           send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), ACK);
           packet_info->flag = SYNACK;
           printf("SynAck: true\n");

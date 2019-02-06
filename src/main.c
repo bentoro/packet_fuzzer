@@ -4,10 +4,8 @@
 #include "../lib/libpcap.h"
 #include "../lib/raw_socket_wrappers.h"
 
+
 int main(int argc, char **argv) {
-  struct addrinfo hints;
-  char *target, *src_ip, *dst_ip;
-  struct ifreq ifr;
 
   if(geteuid() != 0) {
     printf("Must run as root\n");
@@ -30,6 +28,7 @@ int main(int argc, char **argv) {
   send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 0, 0, SYN);
   //TODO: Make the filter more specific
   packet_info = packet_capture("src 192.168.1.72 and dst 192.168.1.86 and tcp", packet_info);
+  send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 0, 0, ACK);
   return (0);
 }
 

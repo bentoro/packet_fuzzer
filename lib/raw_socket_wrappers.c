@@ -306,7 +306,7 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
     packet.tcphdr.th_flags += (tcp_flags[i] << i);
   }
 
-  packet.tcphdr.th_win = htons(29200); //Window size
+  packet.tcphdr.th_win = htons(64240); //Window size
   packet.tcphdr.th_urp = htons(0); //Urgent Pointer
   packet.tcphdr.th_sum = tcp4_checksum(packet.iphdr, packet.tcphdr);
 
