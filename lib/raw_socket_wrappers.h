@@ -54,6 +54,7 @@ struct addrinfo hints;
 char *target, *src_ip, *dst_ip;
 struct ifreq ifr;
 struct packet_info packet_info;
+struct tcp_packet *testcases;
 
 uint16_t checksum(uint16_t *, int);
 uint16_t tcp4_checksum(struct ip, struct tcphdr);
