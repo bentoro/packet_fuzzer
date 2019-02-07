@@ -43,8 +43,8 @@ int main(int argc, char **argv) {
         exit(1);
     }
     config_file = fopen("config", "r");
-    //count how many structs to create
     //TODO: add validation
+    //check how many testcases to create
     while(fgets(buffer, sizeof(buffer), config_file) != NULL){
         line_count++;
     }
