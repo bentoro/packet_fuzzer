@@ -37,16 +37,14 @@ int main(int argc, char *argv[]) {
 
 	// socket address used to store client address
 	struct sockaddr_in client_address;
-	int client_address_len = 0;
+	socklen_t client_address_len = 0;
 
 	// run indefinitely
 	while (true) {
 		char buffer[500];
 
 		// read content into buffer from an incoming client
-		int len = recvfrom(sock, buffer, sizeof(buffer), 0,
-		                   (struct sockaddr *)&client_address,
-		                   &client_address_len);
+		int len = recvfrom(sock, buffer, sizeof(buffer), 0,(struct sockaddr *)&client_address, &client_address_len);
 
 		// inet_ntoa prints user friendly representation of the
 		// ip address
