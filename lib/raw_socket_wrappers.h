@@ -38,14 +38,14 @@ struct packet_info{
     int seq;
     int src_port;
     int dst_port;
-    bool threewayhandshake;
-    bool endconnection;
+    //bool threewayhandshake;
+    //bool endconnection;
 };
 
 struct tcp_packet {
   struct ip iphdr;
   struct tcphdr tcphdr;
-  unsigned char payload[BUFSIZ];
+  char payload[BUFSIZ];
 } tcp_packet;
 
 
@@ -54,12 +54,14 @@ struct addrinfo hints;
 char *target, *src_ip, *dst_ip;
 struct ifreq ifr;
 struct packet_info packet_info;
+bool threewayhandshake;
 
 uint16_t checksum(uint16_t *, int);
-uint16_t tcp4_checksum(struct ip, struct tcphdr);
+uint16_t tcp4_checksum (struct ip iphdr, struct tcphdr tcphdr, uint8_t *payload, int payloadlen);
+//uint16_t tcp4_checksum(struct ip, struct tcphdr);
 int generate_rand(double value);
 struct addrinfo set_hints(int family, int socktype, int flags);
 struct ifreq search_interface(char *ifc);
 char *resolve_host(char *target, struct addrinfo hints);
-void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, int flags);
+void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, char *data, int flags);
 #endif
