@@ -192,15 +192,170 @@ uint16_t tcp4_checksum(struct ip iphdr, struct tcphdr tcphdr) {
   return checksum((uint16_t *)buf, chksumlen);
 }
 
+uint16_t udp4_checksum (struct ip iphdr, struct udphdr udphdr, uint8_t *payload, int payloadlen){
+  char buf[IP_MAXPACKET];
+  char *ptr;
+  int chksumlen = 0;
+  int i;
+
+  ptr = &buf[0];  // ptr points to beginning of buffer buf
+
+  // Copy source IP address into buf (32 bits)
+  memcpy (ptr, &iphdr.ip_src.s_addr, sizeof (iphdr.ip_src.s_addr));
+  ptr += sizeof (iphdr.ip_src.s_addr);
+  chksumlen += sizeof (iphdr.ip_src.s_addr);
+
+  // Copy destination IP address into buf (32 bits)
+  memcpy (ptr, &iphdr.ip_dst.s_addr, sizeof (iphdr.ip_dst.s_addr));
+  ptr += sizeof (iphdr.ip_dst.s_addr);
+  chksumlen += sizeof (iphdr.ip_dst.s_addr);
+
+  // Copy zero field to buf (8 bits)
+  *ptr = 0; ptr++;
+  chksumlen += 1;
+
+  // Copy transport layer protocol to buf (8 bits)
+  memcpy (ptr, &iphdr.ip_p, sizeof (iphdr.ip_p));
+  ptr += sizeof (iphdr.ip_p);
+  chksumlen += sizeof (iphdr.ip_p);
+
+  // Copy UDP length to buf (16 bits)
+  memcpy (ptr, &udphdr.len, sizeof (udphdr.len));
+  ptr += sizeof (udphdr.len);
+  chksumlen += sizeof (udphdr.len);
+
+  // Copy UDP source port to buf (16 bits)
+  memcpy (ptr, &udphdr.source, sizeof (udphdr.source));
+  ptr += sizeof (udphdr.source);
+  chksumlen += sizeof (udphdr.source);
+
+  // Copy UDP destination port to buf (16 bits)
+  memcpy (ptr, &udphdr.dest, sizeof (udphdr.dest));
+  ptr += sizeof (udphdr.dest);
+  chksumlen += sizeof (udphdr.dest);
+
+  // Copy UDP length again to buf (16 bits)
+  memcpy (ptr, &udphdr.len, sizeof (udphdr.len));
+  ptr += sizeof (udphdr.len);
+  chksumlen += sizeof (udphdr.len);
+
+  // Copy UDP checksum to buf (16 bits)
+  // Zero, since we don't know it yet
+  *ptr = 0; ptr++;
+  *ptr = 0; ptr++;
+  chksumlen += 2;
+
+  // Copy payload to buf
+  memcpy (ptr, payload, payloadlen);
+  ptr += payloadlen;
+  chksumlen += payloadlen;
+
+  // Pad to the next 16-bit boundary
+  for (i=0; i<payloadlen%2; i++, ptr++) {
+    *ptr = 0;
+    ptr++;
+    chksumlen++;
+  }
+
+  return checksum ((uint16_t *) buf, chksumlen);
+}
+
 int generate_rand(double value) {
   time_t t;
   srand((unsigned)time(&t));
   return 1 + (int)(value * rand() / RAND_MAX + 1.0);
 }
 
+void send_raw_udp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, char *data, int flags) {
+  struct sockaddr_in sin;
+  struct udp_packet packet;
+  int i, *ip_flags, *tcp_flags, status, sending_socket, payloadlen = 0;
+  const int on = 1;
+
+  ip_flags = (int *)calloc(4, sizeof(int));
+  tcp_flags = (int *)calloc(8, sizeof(int));
+
+  if(data != NULL){
+        sprintf (packet.payload, "%s", data);
+        payloadlen = strlen(packet.payload);
+  }
+
+  //IP HEADER
+  packet.iphdr.ip_hl = IP4_HDRLEN / sizeof (uint32_t);
+  packet.iphdr.ip_v = 4; //ip veriosn
+  packet.iphdr.ip_tos = 0;
+  packet.iphdr.ip_len = htons (IP4_HDRLEN + UDP_HDRLEN + payloadlen); // IP header + UDP header + payload len
+  packet.iphdr.ip_id = htons (0);
+  ip_flags[0] = 0; //Zero
+  ip_flags[1] = 0; //Don't frag
+  ip_flags[2] = 0; // More frag
+  ip_flags[3] = 0; //Frag offset
+  packet.iphdr.ip_off = htons ((ip_flags[0] << 15)+ (ip_flags[1] << 14)+ (ip_flags[2] << 13)+  ip_flags[3]);
+  packet.iphdr.ip_ttl = 255; //TTL
+  packet.iphdr.ip_p = IPPROTO_UDP; //Protocol 17 is UDP
+
+  // Source IPv4 address (32 bits)
+  if ((status = inet_pton (AF_INET, src_ip, &(packet.iphdr.ip_src))) != 1) {
+    fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
+    exit (EXIT_FAILURE);
+  }
+  // Destination IPv4 address (32 bits)
+  if ((status = inet_pton (AF_INET, dst_ip, &(packet.iphdr.ip_dst))) != 1) {
+    fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
+    exit (EXIT_FAILURE);
+  }
+  packet.iphdr.ip_sum = 0;
+  packet.iphdr.ip_sum = checksum ((uint16_t *) &packet.iphdr, IP4_HDRLEN);
+
+  //UDP header
+  packet.udphdr.source = htons (4950);
+  packet.udphdr.dest = htons (8045);
+  packet.udphdr.len = htons (UDP_HDRLEN + payloadlen); //Length of Datagram = UDP Header + UDP Data
+  packet.udphdr.check = udp4_checksum (packet.iphdr, packet.udphdr, (uint8_t *)packet.payload, payloadlen);
+
+  // The kernel is going to prepare layer 2 information (ethernet frame header) for us.
+  // For that, we need to specify a destination for the kernel in order for it
+  // to decide where to send the raw datagram. We fill in a struct in_addr with
+  // the desired destination IP address, and pass this structure to the sendto() function.
+  memset (&sin, 0, sizeof (struct sockaddr_in));
+  sin.sin_family = AF_INET;
+  sin.sin_addr.s_addr = packet.iphdr.ip_dst.s_addr;
+
+  // Submit request for a raw socket descriptor.
+  if ((sending_socket = socket (AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
+    perror ("socket() failed ");
+    exit (EXIT_FAILURE);
+  }
+
+  // Set flag so socket expects us to provide IPv4 header.
+  if (setsockopt (sending_socket, IPPROTO_IP, IP_HDRINCL, &on, sizeof (on)) < 0) {
+    perror ("setsockopt() failed to set IP_HDRINCL ");
+    exit (EXIT_FAILURE);
+  }
+
+  // Bind socket to interface index.
+  if (setsockopt (sending_socket, SOL_SOCKET, SO_BINDTODEVICE, &ifr, sizeof (ifr)) < 0) {
+    perror ("setsockopt() failed to bind to interface ");
+    exit (EXIT_FAILURE);
+  }
+
+  // Send packet.
+  if (sendto (sending_socket, &packet, IP4_HDRLEN + UDP_HDRLEN + payloadlen, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr)) < 0)  {
+    perror ("sendto() failed ");
+    exit (EXIT_FAILURE);
+  }
+
+  // Close socket descriptor.
+  close (sending_socket);
+
+  // Free allocated memory.
+  free(ip_flags);
+}
+
+
 void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, int flags) {
   struct sockaddr_in sin;
-  int i, *ip_flags, *tcp_flags, status, sending_socket;
+  int *ip_flags, *tcp_flags, status, sending_socket;
   const int on = 1;
   struct tcp_packet packet;
   memset(&packet, 0, sizeof(struct tcp_packet));
@@ -302,7 +457,7 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
   tcp_flags[6] = 0; //ECE
   tcp_flags[7] = 0; //CWR
   packet.tcphdr.th_flags = 0;
-  for (i = 0; i < 8; i++) {
+  for (int i = 0; i < 8; i++) {
     packet.tcphdr.th_flags += (tcp_flags[i] << i);
   }
 
@@ -345,8 +500,7 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
     exit(EXIT_FAILURE);
   }
   printf("Packet sent\n");
-  // Close socket descriptor.
-  //close(sending_socket);
+  close(sending_socket);
   // Free allocated memory.
   free(ip_flags);
   free(tcp_flags);
