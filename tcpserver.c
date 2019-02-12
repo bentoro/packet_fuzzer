@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#define SERVER_TCP_PORT 8040
+#define SERVER_TCP_PORT 8045
 #define BUFSIZE 1024
 
 int main(int argc, char** argv){
