@@ -42,14 +42,14 @@ struct packet_info{
     int seq;
     int src_port;
     int dst_port;
-    bool threewayhandshake;
-    bool endconnection;
+    //bool threewayhandshake;
+    //bool endconnection;
 };
 
 struct tcp_packet {
   struct ip iphdr;
   struct tcphdr tcphdr;
-  unsigned char payload[BUFSIZ];
+  char payload[BUFSIZ];
 } tcp_packet;
 
 struct udp_packet{
@@ -63,11 +63,12 @@ struct addrinfo hints;
 char *target, *src_ip, *dst_ip;
 struct ifreq ifr;
 struct packet_info packet_info;
+bool threewayhandshake;
 
 uint16_t checksum(uint16_t *, int);
-uint16_t tcp4_checksum(struct ip, struct tcphdr);
 uint16_t udp4_checksum (struct ip iphdr, struct udphdr udphdr, uint8_t *payload, int payloadlen);
 uint16_t icmp4_checksum (struct icmp icmphdr, uint8_t *payload, int payloadlen);
+uint16_t tcp4_checksum (struct ip iphdr, struct tcphdr tcphdr, uint8_t *payload, int payloadlen);
 int generate_rand(double value);
 struct addrinfo set_hints(int family, int socktype, int flags);
 struct ifreq search_interface(char *ifc);

@@ -121,12 +121,16 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
       packet_info->seq = ntohl(tcp->seq);
       printf("Acknowledgement: %u \n", ntohl(tcp->ack_seq));
       packet_info->ack = ntohl(tcp->ack_seq);
+      printf("Len: %d\n", ntohs(ip->tot_len));
       if(tcp->fin && tcp->ack){
           printf("FinAck: true\n");
           packet_info->flag = FINACK;
       }else if(tcp->syn && tcp->ack){
+          if(!threewayhandshake){
+              send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), NULL, ACK);
+              send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
+          }
           // Interface to send packet through.
-          send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), ACK);
           packet_info->flag = SYNACK;
           printf("SynAck: true\n");
       }else if(tcp->psh && tcp->ack){
