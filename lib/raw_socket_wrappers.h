@@ -73,7 +73,7 @@ int generate_rand(double value);
 struct addrinfo set_hints(int family, int socktype, int flags);
 struct ifreq search_interface(char *ifc);
 char *resolve_host(char *target, struct addrinfo hints);
-void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, int flags);
+void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack,  char *data,int flags);
 void send_raw_udp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, char *data, int flags);
 void send_raw_icmp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, char *data, int flags);
 #endif

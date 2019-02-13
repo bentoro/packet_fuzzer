@@ -4,7 +4,6 @@
 #include "../lib/libpcap.h"
 #include "../lib/raw_socket_wrappers.h"
 
-
 int main(int argc, char **argv) {
 
   if(geteuid() != 0) {
