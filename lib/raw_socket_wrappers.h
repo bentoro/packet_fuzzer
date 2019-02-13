@@ -8,6 +8,7 @@
 #include <netinet/ip.h>       //iphdr
 #include <netinet/tcp.h>      //tcphdr
 #include <netinet/udp.h>      //udphdr
+#include <netinet/ip_icmp.h>  //icmp
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,7 +22,8 @@
 
 #define IP4_HDRLEN 20 // Length of IPv4 Header
 #define TCP_HDRLEN 20 // Length of TCP Header
-#define UDP_HDRLEN  8         // UDP header length, excludes data
+#define UDP_HDRLEN  8 // Length of UDP Header
+#define ICMP_HDRLEN 8 // Length of ICMP Header
 #define SYN 0
 #define ACK 1
 #define SYNACK 2
@@ -65,10 +67,12 @@ struct packet_info packet_info;
 uint16_t checksum(uint16_t *, int);
 uint16_t tcp4_checksum(struct ip, struct tcphdr);
 uint16_t udp4_checksum (struct ip iphdr, struct udphdr udphdr, uint8_t *payload, int payloadlen);
+uint16_t icmp4_checksum (struct icmp icmphdr, uint8_t *payload, int payloadlen);
 int generate_rand(double value);
 struct addrinfo set_hints(int family, int socktype, int flags);
 struct ifreq search_interface(char *ifc);
 char *resolve_host(char *target, struct addrinfo hints);
 void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, int flags);
 void send_raw_udp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, char *data, int flags);
+void send_raw_icmp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, char *data, int flags);
 #endif

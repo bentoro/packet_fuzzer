@@ -260,12 +260,165 @@ uint16_t udp4_checksum (struct ip iphdr, struct udphdr udphdr, uint8_t *payload,
   return checksum ((uint16_t *) buf, chksumlen);
 }
 
+uint16_t icmp4_checksum (struct icmp icmphdr, uint8_t *payload, int payloadlen){
+  char buf[IP_MAXPACKET];
+  char *ptr;
+  int chksumlen = 0;
+  int i;
+
+  ptr = &buf[0];  // ptr points to beginning of buffer buf
+
+  // Copy Message Type to buf (8 bits)
+  memcpy (ptr, &icmphdr.icmp_type, sizeof (icmphdr.icmp_type));
+  ptr += sizeof (icmphdr.icmp_type);
+  chksumlen += sizeof (icmphdr.icmp_type);
+
+  // Copy Message Code to buf (8 bits)
+  memcpy (ptr, &icmphdr.icmp_code, sizeof (icmphdr.icmp_code));
+  ptr += sizeof (icmphdr.icmp_code);
+  chksumlen += sizeof (icmphdr.icmp_code);
+
+  // Copy ICMP checksum to buf (16 bits)
+  // Zero, since we don't know it yet
+  *ptr = 0; ptr++;
+  *ptr = 0; ptr++;
+  chksumlen += 2;
+
+  // Copy Identifier to buf (16 bits)
+  memcpy (ptr, &icmphdr.icmp_id, sizeof (icmphdr.icmp_id));
+  ptr += sizeof (icmphdr.icmp_id);
+  chksumlen += sizeof (icmphdr.icmp_id);
+
+  // Copy Sequence Number to buf (16 bits)
+  memcpy (ptr, &icmphdr.icmp_seq, sizeof (icmphdr.icmp_seq));
+  ptr += sizeof (icmphdr.icmp_seq);
+  chksumlen += sizeof (icmphdr.icmp_seq);
+
+  // Copy payload to buf
+  memcpy (ptr, payload, payloadlen);
+  ptr += payloadlen;
+  chksumlen += payloadlen;
+
+  // Pad to the next 16-bit boundary
+  for (i=0; i<payloadlen%2; i++, ptr++) {
+    *ptr = 0;
+    ptr++;
+    chksumlen++;
+  }
+
+  return checksum ((uint16_t *) buf, chksumlen);
+}
+
 int generate_rand(double value) {
   time_t t;
   srand((unsigned)time(&t));
   return 1 + (int)(value * rand() / RAND_MAX + 1.0);
 }
 
+void send_raw_icmp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, char *data, int flags) {
+  int status, payloadlen, sd, *ip_flags;
+  struct sockaddr_in sin;
+  struct ip iphdr;
+  struct icmp icmphdr;
+  uint8_t *packet, *payload;
+  const int on = 1;
+  payload = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
+  packet = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
+  ip_flags = (int *)calloc(4, sizeof(int));
+  // ICMP data
+  sprintf ((char *)payload, "TEST");
+  payloadlen = strlen((const char *)payload);
+  printf("Payload(%i): %s\n", payloadlen,payload);
+  // IPv4 header
+  iphdr.ip_hl = IP4_HDRLEN / sizeof (uint32_t);
+  iphdr.ip_v = 4; //ip veriosn
+  iphdr.ip_tos = 0;
+  iphdr.ip_len = htons (IP4_HDRLEN + ICMP_HDRLEN + payloadlen); // IP header + ICMP header + payload len
+  iphdr.ip_id = htons (0);
+  ip_flags[0] = 0; //Zero
+  ip_flags[1] = 0; //Don't frag
+  ip_flags[2] = 0; // More frag
+  ip_flags[3] = 0; //Frag offset
+  iphdr.ip_off = htons ((ip_flags[0] << 15)+ (ip_flags[1] << 14)+ (ip_flags[2] << 13)+  ip_flags[3]);
+  iphdr.ip_ttl = 255; //TTL
+  iphdr.ip_p = IPPROTO_ICMP; //Protocol 1 is ICMP
+
+  // Source IPv4 address (32 bits)
+  if ((status = inet_pton (AF_INET, src_ip, &(iphdr.ip_src))) != 1) {
+    fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
+    exit (EXIT_FAILURE);
+  }
+
+  // Destination IPv4 address (32 bits)
+  if ((status = inet_pton (AF_INET, dst_ip, &(iphdr.ip_dst))) != 1) {
+    fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
+    exit (EXIT_FAILURE);
+  }
+  iphdr.ip_sum = 0;
+  iphdr.ip_sum = checksum ((uint16_t *) &iphdr, IP4_HDRLEN);
+
+  // ICMP header
+  icmphdr.icmp_type = ICMP_ECHO; //message type
+  icmphdr.icmp_code = 0; //message code
+  icmphdr.icmp_id = htons (1000); //usually PID of sending process
+  icmphdr.icmp_seq = htons (0); //starts at 0
+  icmphdr.icmp_cksum = 0;
+
+  // First part is an IPv4 header.
+  memcpy (packet, &iphdr, IP4_HDRLEN);
+
+  // Next part of packet is upper layer protocol header.
+  memcpy ((packet + IP4_HDRLEN), &icmphdr, ICMP_HDRLEN);
+
+  // Finally, add the ICMP data.
+  memcpy (packet + IP4_HDRLEN + ICMP_HDRLEN, payload, payloadlen);
+
+  // Calculate ICMP header checksum
+  icmphdr.icmp_cksum = icmp4_checksum (icmphdr, payload, payloadlen);
+  memcpy ((packet + IP4_HDRLEN), &icmphdr, ICMP_HDRLEN);
+
+  // The kernel is going to prepare layer 2 information (ethernet frame header) for us.
+  // For that, we need to specify a destination for the kernel in order for it
+  // to decide where to send the raw datagram. We fill in a struct in_addr with
+  // the desired destination IP address, and pass this structure to the sendto() function.
+  memset (&sin, 0, sizeof (struct sockaddr_in));
+  sin.sin_family = AF_INET;
+  sin.sin_addr.s_addr = iphdr.ip_dst.s_addr;
+
+  // Submit request for a raw socket descriptor.
+  if ((sd = socket (AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
+    perror ("socket() failed ");
+    exit (EXIT_FAILURE);
+  }
+
+  // Set flag so socket expects us to provide IPv4 header.
+  if (setsockopt (sd, IPPROTO_IP, IP_HDRINCL, &on, sizeof (on)) < 0) {
+    perror ("setsockopt() failed to set IP_HDRINCL ");
+    exit (EXIT_FAILURE);
+  }
+
+  // Bind socket to interface index.
+  if (setsockopt (sd, SOL_SOCKET, SO_BINDTODEVICE, &ifr, sizeof (ifr)) < 0) {
+    perror ("setsockopt() failed to bind to interface ");
+    exit (EXIT_FAILURE);
+  }
+
+  // Send packet.
+  if (sendto (sd, packet, IP4_HDRLEN + ICMP_HDRLEN + payloadlen, 0, (struct sockaddr *) &sin, sizeof (struct sockaddr)) < 0)  {
+    perror ("sendto() failed ");
+    exit (EXIT_FAILURE);
+  }
+
+  // Close socket descriptor.
+  close (sd);
+
+  // Free allocated memory.
+  free (target);
+  free (src_ip);
+  free (dst_ip);
+  free (ip_flags);
+
+}
 void send_raw_udp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, char *data, int flags) {
   struct sockaddr_in sin;
   struct udp_packet packet;
