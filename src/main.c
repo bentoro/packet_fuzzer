@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
   // Resolve target using getaddrinfo().
   dst_ip = resolve_host(target, hints);
 
-  send_raw_icmp_packet(100, 8040, ifr, src_ip, dst_ip, 0,0, "HELLO", SYN);
+  //send_raw_icmp_packet(100, 8040, ifr, src_ip, dst_ip, 0,0, "HELLO", SYN);
   //send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 0, 0, SYN);
   //TODO: Make the filter more specific
   //packet_info = packet_capture("src 192.168.1.72 and dst 192.168.1.86 and tcp", packet_info);
