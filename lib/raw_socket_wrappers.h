@@ -58,6 +58,13 @@ struct udp_packet{
     char payload[BUFSIZ];
 } udp_packet;
 
+
+struct icmp_packet {
+  struct ip iphdr;
+  struct icmp icmphdr;
+  unsigned char payload[BUFSIZ];
+} icmp_packet;
+
 int seq;
 struct addrinfo hints;
 char *target, *src_ip, *dst_ip;

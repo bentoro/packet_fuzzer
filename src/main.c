@@ -19,8 +19,8 @@ int main(int argc, char **argv) {
   // Interface to send packet through.
   ifr = search_interface("wlp2s0");
 
-  strcpy (src_ip, "192.168.1.86");
-  strcpy (target, "192.168.1.72");
+  strcpy (src_ip, "192.168.1.85");
+  strcpy (target, "192.168.1.81");
   hints = set_hints(AF_INET, SOCK_STREAM, hints.ai_flags | AI_CANONNAME);
   // Resolve target using getaddrinfo().
   dst_ip = resolve_host(target, hints);

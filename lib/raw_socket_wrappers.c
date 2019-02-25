@@ -316,20 +316,38 @@ int generate_rand(double value) {
 }
 
 void send_raw_icmp_packet(int src_port, int dst_port, struct ifreq interface, char* src_ip, char* dst_ip, int seq, int ack, char *data, int flags) {
+  //struct icmp_packet packet;
   int status, payloadlen, sd, *ip_flags;
   struct sockaddr_in sin;
   struct ip iphdr;
   struct icmp icmphdr;
   uint8_t *packet, *payload;
   const int on = 1;
+
   payload = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
   packet = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
   ip_flags = (int *)calloc(4, sizeof(int));
   // ICMP data
+  //sprintf ((char *)packet.payload, "TEST");
+  //payloadlen = strlen((const char *)packet.payload);
   sprintf ((char *)payload, "TEST");
   payloadlen = strlen((const char *)payload);
   printf("Payload(%i): %s\n", payloadlen,payload);
+
   // IPv4 header
+  /*packet.iphdr.ip_hl = IP4_HDRLEN / sizeof (uint32_t);
+  packet.iphdr.ip_v = 4;
+  packet.iphdr.ip_tos = 0;
+  packet.iphdr.ip_len = htons (IP4_HDRLEN + ICMP_HDRLEN + datalen);
+  packet.iphdr.ip_id = htons (0);
+  ip_flags[0] = 0; //Zero
+  ip_flags[1] = 0; //Don't frag
+  ip_flags[2] = 0; // More frag
+  ip_flags[3] = 0; //Frag offset
+  packet.iphdr.ip_off = htons ((ip_flags[0] << 15) + (ip_flags[1] << 14) + (ip_flags[2] << 13) +  ip_flags[3]);
+  packet.iphdr.ip_ttl = 255;
+  packet.iphdr.ip_p = IPPROTO_ICMP; //1 for ICMP*/
+
   iphdr.ip_hl = IP4_HDRLEN / sizeof (uint32_t);
   iphdr.ip_v = 4; //ip veriosn
   iphdr.ip_tos = 0;
@@ -344,18 +362,30 @@ void send_raw_icmp_packet(int src_port, int dst_port, struct ifreq interface, ch
   iphdr.ip_p = IPPROTO_ICMP; //Protocol 1 is ICMP
 
   // Source IPv4 address (32 bits)
+  //if ((status = inet_pton (AF_INET, src_ip, &(packet.iphdr.ip_src))) != 1) {
   if ((status = inet_pton (AF_INET, src_ip, &(iphdr.ip_src))) != 1) {
     fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
     exit (EXIT_FAILURE);
   }
 
   // Destination IPv4 address (32 bits)
+  //if ((status = inet_pton (AF_INET, dst_ip, &(packet.iphdr.ip_dst))) != 1) {
   if ((status = inet_pton (AF_INET, dst_ip, &(iphdr.ip_dst))) != 1) {
     fprintf (stderr, "inet_pton() failed.\nError message: %s", strerror (status));
     exit (EXIT_FAILURE);
   }
   iphdr.ip_sum = 0;
   iphdr.ip_sum = checksum ((uint16_t *) &iphdr, IP4_HDRLEN);
+
+  /*packet.iphdr.ip_sum = 0;
+  packet.iphdr.ip_sum = checksum ((uint16_t *) &packet.iphdr, IP4_HDRLEN);
+
+  // ICMP header
+  packet.icmphdr.icmp_type = ICMP_ECHO;
+  packet.icmphdr.icmp_code = 0;
+  packet.icmphdr.icmp_id = htons (1000);
+  packet.icmphdr.icmp_seq = htons (0);
+  packet.icmphdr.icmp_cksum = 0;*/
 
   // ICMP header
   icmphdr.icmp_type = ICMP_ECHO; //message type
@@ -374,6 +404,7 @@ void send_raw_icmp_packet(int src_port, int dst_port, struct ifreq interface, ch
   memcpy (packet + IP4_HDRLEN + ICMP_HDRLEN, payload, payloadlen);
 
   // Calculate ICMP header checksum
+  //packet.icmphdr.icmp_cksum = icmp4_checksum (packet.icmphdr, packet.payload, datalen);
   icmphdr.icmp_cksum = icmp4_checksum (icmphdr, payload, payloadlen);
   memcpy ((packet + IP4_HDRLEN), &icmphdr, ICMP_HDRLEN);
 
