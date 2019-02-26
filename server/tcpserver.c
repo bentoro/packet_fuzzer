@@ -1,49 +1,77 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <stdlib.h>
-#include <strings.h>
+#include <netdb.h>
 #include <arpa/inet.h>
-#include <unistd.h>
+#include <sys/wait.h>
+#include <signal.h>
+#include "../lib/normal_socket_wrappers.h"
 
-#define SERVER_TCP_PORT 8045
-#define BUFSIZE 1024
+#define PORT "3490"  // the port users will be connecting to
+#define BACKLOG 10     // how many pending connections queue will hold
 
-int main(int argc, char** argv){
-    int n, bytes_to_read;
-    int sd, new_sd, port;
-    socklen_t client_len;
-    struct sockaddr_in server, client;
-    char *bp, buf[BUFSIZE];
+void sigchld_handler(int s)
+{
+    // waitpid() might overwrite errno, so we save and restore it:
+    int saved_errno = errno;
+    while(waitpid(-1, NULL, WNOHANG) > 0);
+    errno = saved_errno;
+}
 
-    port = SERVER_TCP_PORT;
-
-    sd = socket(AF_INET, SOCK_STREAM, 0);
-
-    bzero((char *)&server, sizeof(struct sockaddr_in));
-    server.sin_family = AF_INET;
-    server.sin_port = htons(port);
-    server.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    bind(sd, (struct sockaddr *)&server, sizeof(server));
-    listen(sd,1);
-
-    client_len = sizeof(client);
-    new_sd = accept(sd, (struct sockaddr *)&client, &client_len);
-
-    bp = buf;
-    bytes_to_read = BUFSIZE;
-    while ((n = recv(new_sd, bp, bytes_to_read, 0)) < BUFSIZE){
-        bp += n;
-        bytes_to_read -= n;
+// get sockaddr, IPv4 or IPv6:
+void *get_in_addr(struct sockaddr *sa)
+{
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in*)sa)->sin_addr);
     }
 
-    printf("sending: %s\n", buf);
+    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
 
-    send(new_sd, buf, BUFSIZE, 0);
-    close(new_sd);
-    close(sd);
+int main(void)
+{
+    int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
+    struct sockaddr_storage their_addr; // connector's address information
+    socklen_t sin_size;
+    struct sigaction sa;
+    char s[INET6_ADDRSTRLEN];
+
+    sockfd = make_bind(PORT);
+    set_listen(sockfd);
+
+    sa.sa_handler = sigchld_handler; // reap all dead processes
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+        perror("sigaction");
+        exit(1);
+    }
+
+    printf("server: waiting for connections...\n");
+
+    while(1) {  // main accept() loop
+        sin_size = sizeof their_addr;
+        new_fd = Accept(sockfd, &their_addr);
+
+        inet_ntop(their_addr.ss_family,
+            get_in_addr((struct sockaddr *)&their_addr),
+            s, sizeof s);
+        printf("server: got connection from %s\n", s);
+
+        if (!fork()) { // this is the child process
+            close(sockfd); // child doesn't need the listener
+            if (send(new_fd, "Hello, world!", 13, 0) == -1)
+                perror("send");
+            close(new_fd);
+            exit(0);
+        }
+        close(new_fd);  // parent doesn't need this
+    }
 
     return 0;
 }

@@ -1,5 +1,151 @@
 #include "normal_socket_wrappers.h"
 
+/*
+ * =====================================================================================
+ *
+ *       function: setHints
+ *
+ *         return: struct addrinfo
+ *
+ *       Parameters:
+ *                    int family - set the family
+ *                    int socktype - set the socktype
+ *                    int flags - set the flags
+ *
+ *       Notes:
+ *              starts the timer
+ * =====================================================================================
+ */
+struct addrinfo set_hints(int family, int socktype, int flags){
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = family; //IPV4
+    hints.ai_socktype = socktype; //TCP
+    hints.ai_flags = flags;
+
+    return hints;
+}
+
+//node is the hostname to connect to
+//service is the port number
+//hints points to a addrinfo struct
+struct addrinfo set_addr_info(const char* address,const char *port, struct addrinfo hints){
+    int status;
+    struct addrinfo *servinfo;
+
+    if((status = getaddrinfo(address, port, &hints, &servinfo)) != 0){
+        perror("getaddrinfo");
+        exit(1);
+    }
+    return(*servinfo);
+    //freeaddrinfo(servinfo);
+}
+
+int set_bind(int fd, struct addrinfo *p){
+    int r;
+    if((r = bind(fd, p->ai_addr, p->ai_addrlen)) == -1){
+        perror("bind");
+        exit(1);
+        return -1;
+    }
+    return r;
+}
+
+void set_listen(int fd){
+    if((listen(fd, MAXCONNECTION)) == -1){
+        perror("listen");
+        exit(1);
+    }
+}
+
+int make_connect(const char *address, const char *port){
+    struct addrinfo hints;
+    struct addrinfo *servinfo;
+    struct addrinfo *p;
+    int fd;
+
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    if((getaddrinfo(address, port, &hints, &servinfo)) != 0){
+        perror("getaddrinfo");
+        exit(1);
+    }
+
+    for(p = servinfo; p != NULL; p->ai_next){
+        if((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
+            perror("client: socket");
+            continue;
+        }
+        if((connect(fd, p->ai_addr, p->ai_addrlen)) == -1){
+            close(fd);
+            perror("client:bind");
+            continue;
+        }
+        break;
+    }
+
+    freeaddrinfo(servinfo);
+
+    //set_non_blocking(fd);
+
+    return fd;
+}
+
+
+int make_bind(const char *port){
+    struct addrinfo hints;
+    struct addrinfo *servinfo;
+    struct addrinfo *p;
+    int fd;
+
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+
+    if((getaddrinfo(NULL, port, &hints, &servinfo)) != 0){
+        perror("getaddrinfo");
+        exit(1);
+    }
+
+    for(p = servinfo; p != NULL; p->ai_next){
+        if((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
+            perror("server: socket");
+            continue;
+        }
+        int yes = 1;
+        if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1){
+            perror("setsockopt");
+        }
+        if((bind(fd, p->ai_addr, p->ai_addrlen)) == -1){
+            close(fd);
+            perror("server:bind");
+            continue;
+        }
+        break;
+    }
+    if(p == NULL){
+        perror("Could not bind");
+    }
+    freeaddrinfo(servinfo);
+
+    //set_non_blocking(fd);
+
+    return fd;
+}
+
+int Accept(int fd, struct sockaddr_storage *addr){
+    int r;
+    socklen_t len = sizeof(struct sockaddr_storage);
+    if((r = accept(fd,(struct sockaddr*)addr, &len)) != -1){
+        perror("accept");
+    }
+    return r;
+}
+
 void send_normal_tcp_packet(int sending_socket, char *data, int length) {
     int total = 0;
     int bytes_left = length;
