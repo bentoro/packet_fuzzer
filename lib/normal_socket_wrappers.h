@@ -24,6 +24,8 @@
 
 #define MAXCONNECTION 128
 
+void *get_in_addr(struct sockaddr *sa);
+void sig_handler(int s);
 struct addrinfo set_hints(int family, int socktype, int flags);
 struct addrinfo set_addr_info(const char* address, const char *port, struct addrinfo hints);
 int set_bind(int fd, struct addrinfo *p);

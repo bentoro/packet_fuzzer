@@ -1,55 +1,82 @@
-#include <stdlib.h>
-#include <netinet/in.h>
-#include <netinet/ip.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-//#include <linux/ip.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
 #include <string.h>
 #include <netdb.h>
-#include <unistd.h>
-#include <netinet/tcp.h>
-#include <time.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include "../lib/normal_socket_wrappers.h"
 
-#define PORT 8045
+#define PORT "8045"
 #define BUFSIZE 1024
 
-int main (int argc, char** argv){
-    int n = 0, bytes_to_read;
-    int sd, port;
-    struct hostent *hp;
-    struct sockaddr_in server;
-    char *host, *bp, rbuf[BUFSIZE], sbuf[BUFSIZE];
-
-    host = "192.168.1.81";
-    port = PORT;
-
-    sd = socket(AF_INET, SOCK_STREAM,0);
-
-    bzero((char *)&server, sizeof(struct sockaddr_in));
-
-    server.sin_family = AF_INET;
-    server.sin_port = htons(port);
-
-    hp = gethostbyname(host);
-
-    bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
-
-    connect(sd, (struct sockaddr *)&server, sizeof(server));
-    for(int i = 0; i < 2; i++){
-        strncpy(sbuf, "hi", BUFSIZE);
-        send(sd, sbuf, BUFSIZE, 0);
-
-        bp = rbuf;
-        bytes_to_read = BUFSIZE;
-
-        while((n = recv(sd, bp, bytes_to_read, 0)) < BUFSIZE){
-            bp+=n;
-            bytes_to_read-=n;
-        }
-    printf("Receive:\n %s", bp);
-
+void *get_in_addr(struct sockaddr *sa)
+{
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in*)sa)->sin_addr);
     }
+
+    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+
+int main(int argc, char *argv[]){
+    int sockfd;
+    char buf[BUFSIZE];
+    struct addrinfo hints, *servinfo, *p;
+    int rv;
+    char s[INET6_ADDRSTRLEN];
+
+    if (argc != 2) {
+        fprintf(stderr,"usage: client hostname\n");
+        exit(1);
+    }
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    if ((rv = getaddrinfo(argv[1], PORT, &hints, &servinfo)) != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+        return 1;
+    }
+
+    for(p = servinfo; p != NULL; p = p->ai_next) {
+        if ((sockfd = socket(p->ai_family, p->ai_socktype,
+                p->ai_protocol)) == -1) {
+            perror("client: socket");
+            continue;
+        }
+
+        if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(sockfd);
+            perror("client: connect");
+            continue;
+        }
+        break;
+    }
+
+    if (p == NULL) {
+        fprintf(stderr, "client: failed to connect\n");
+        return 2;
+    }
+
+    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
+            s, sizeof s);
+    printf("client: connecting to %s\n", s);
+
+    freeaddrinfo(servinfo);
+    while(1){
+        printf("Enter message to send: ");
+        scanf("%s", buf);
+        send_normal_tcp_packet(sockfd, buf, sizeof(buf));
+        recv_normal_tcp_packet(sockfd, buf, sizeof(buf));
+
+        printf("client: received '%s'\n",buf);
+    }
+    close(sockfd);
 
     return 0;
 }
