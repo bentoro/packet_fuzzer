@@ -11,7 +11,7 @@
 #include <netinet/tcp.h>
 #include <time.h>
 
-#define PORT 8040
+#define PORT 8045
 #define BUFSIZE 1024
 
 int main (int argc, char** argv){
@@ -21,7 +21,7 @@ int main (int argc, char** argv){
     struct sockaddr_in server;
     char *host, *bp, rbuf[BUFSIZE], sbuf[BUFSIZE];
 
-    host = "192.168.1.72";
+    host = "192.168.1.81";
     port = PORT;
 
     sd = socket(AF_INET, SOCK_STREAM,0);
@@ -36,17 +36,19 @@ int main (int argc, char** argv){
     bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
 
     connect(sd, (struct sockaddr *)&server, sizeof(server));
+    for(int i = 0; i < 2; i++){
+        strncpy(sbuf, "hi", BUFSIZE);
+        send(sd, sbuf, BUFSIZE, 0);
 
-    strncpy(sbuf, "hi", BUFSIZE);
-    send(sd, sbuf, BUFSIZE, 0);
+        bp = rbuf;
+        bytes_to_read = BUFSIZE;
 
-    printf("Receive:\n");
-    bp = rbuf;
-    bytes_to_read = BUFSIZE;
+        while((n = recv(sd, bp, bytes_to_read, 0)) < BUFSIZE){
+            bp+=n;
+            bytes_to_read-=n;
+        }
+    printf("Receive:\n %s", bp);
 
-    while((n = recv(sd, bp, bytes_to_read, 0)) < BUFSIZE){
-        bp+=n;
-        bytes_to_read-=n;
     }
 
     return 0;
