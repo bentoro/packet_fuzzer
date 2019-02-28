@@ -3,18 +3,23 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 struct Queue{
     int front, rear, size;
-    char **array;
+    struct Data *array;
     unsigned capacity;
+};
+
+struct Data{
+    char* data;
 };
 
 int fuzz();
 int fuzz_payload();
 struct Queue* create_queue(unsigned capacity);
-void enqueue();
-char* dequeue();
+void enqueue(struct Queue* queue, char* item);;
+char* dequeue(struct Queue* queue);
 int is_full(struct Queue* queue);
 int is_empty(struct Queue* queue);
 char* front(struct Queue* queue);
