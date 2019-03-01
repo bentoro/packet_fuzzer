@@ -127,8 +127,8 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
           packet_info->flag = FINACK;
       }else if(tcp->syn && tcp->ack){
           if(!threewayhandshake){
-              send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), NULL, ACK);
-              send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
+              send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), NULL, ACK);
+              send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
           }
           // Interface to send packet through.
           packet_info->flag = SYNACK;

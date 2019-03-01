@@ -80,9 +80,10 @@ int main(void){
     printf("server: got connection from %s\n", s);
     while(1) {
         char data[1024];
-        recv_normal_tcp_packet(new_fd, data, sizeof(data));
+        //recv_normal_tcp_packet(new_fd, data, sizeof(data));
+        int bytes_receieved = recv(new_fd, data, sizeof(data),0);
         printf("Received: %s from %s\n",data, s);
-        send_normal_tcp_packet(new_fd, data, sizeof(data));
+        send_normal_tcp_packet(new_fd, data, bytes_receieved);
     }
     close(new_fd);
     close(sockfd);
