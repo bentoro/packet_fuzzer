@@ -344,10 +344,14 @@ void send_raw_icmp_packet(int seq, int ack,char *data, int flags) {
   ip_flags = (int *)calloc(4, sizeof(int));
 
   // ICMP data
-  sprintf((char *)payload, "TEST");
-  payloadlen = strlen((const char *)payload);
+  if (data != NULL) {
+    sprintf((char *)payload, "%s", data);
+    payloadlen = strlen((const char *)payload);
+  }
   printf("Payload(%i): %s\n", payloadlen, payload);
-  // IPv4 header
+
+  iphdr = build_ip_header(IP4_HDRLEN,4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, ICMP);
+  /*// IPv4 header
   iphdr.ip_hl = IP4_HDRLEN / sizeof(uint32_t);
   iphdr.ip_v = 4; // ip veriosn
   iphdr.ip_tos = 0;
@@ -373,22 +377,21 @@ void send_raw_icmp_packet(int seq, int ack,char *data, int flags) {
     exit(EXIT_FAILURE);
   }
   iphdr.ip_sum = 0;
-  iphdr.ip_sum = checksum((uint16_t *)&iphdr, IP4_HDRLEN);
-
-  // ICMP header
+  iphdr.ip_sum = checksum((uint16_t *)&iphdr, IP4_HDRLEN);*/
+  //Build ICMP Header
+  icmphdr = build_icmp_header(ICMP_ECHO,0,1000,0);
+  /*// ICMP header
   icmphdr.icmp_type = ICMP_ECHO; // message type
   icmphdr.icmp_code = 0;         // message code
   icmphdr.icmp_id = htons(1000); // usually PID of sending process
   icmphdr.icmp_seq = htons(0);   // starts at 0
-  icmphdr.icmp_cksum = 0;
+  icmphdr.icmp_cksum = 0;*/
 
-  // First part is an IPv4 header.
+  // Copy the IP header.
   memcpy(packet, &iphdr, IP4_HDRLEN);
-
-  // Next part of packet is upper layer protocol header.
+  // Copy the ICMP Header
   memcpy((packet + IP4_HDRLEN), &icmphdr, ICMP_HDRLEN);
-
-  // Finally, add the ICMP data.
+  // Copy the ICMP payload
   memcpy(packet + IP4_HDRLEN + ICMP_HDRLEN, payload, payloadlen);
 
   // Calculate ICMP header checksum
@@ -440,7 +443,8 @@ void send_raw_udp_packet(int seq, int ack,char *data, int flags) {
   struct udp_packet packet;
   int i, *ip_flags, *tcp_flags, status, sending_socket, payloadlen = 0;
   const int on = 1;
-
+  struct ip ip;
+  struct udphdr udp;
   ip_flags = (int *)calloc(4, sizeof(int));
   tcp_flags = (int *)calloc(8, sizeof(int));
 
@@ -449,13 +453,15 @@ void send_raw_udp_packet(int seq, int ack,char *data, int flags) {
     payloadlen = strlen(packet.payload);
   }
 
-  // IP HEADER
+
+  //Build IP Header
+  ip = build_ip_header(IP4_HDRLEN,4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, UDP);
+  packet.iphdr = ip;
+  /*// IP HEADER
   packet.iphdr.ip_hl = IP4_HDRLEN / sizeof(uint32_t);
   packet.iphdr.ip_v = 4; // ip veriosn
   packet.iphdr.ip_tos = 0;
-  packet.iphdr.ip_len =
-      htons(IP4_HDRLEN + UDP_HDRLEN +
-            payloadlen); // IP header + UDP header + payload len
+  packet.iphdr.ip_len =htons(IP4_HDRLEN + UDP_HDRLEN +payloadlen); // IP header + UDP header + payload len
   packet.iphdr.ip_id = htons(0);
   ip_flags[0] = 0; // Zero
   ip_flags[1] = 0; // Don't frag
@@ -476,13 +482,14 @@ void send_raw_udp_packet(int seq, int ack,char *data, int flags) {
     exit(EXIT_FAILURE);
   }
   packet.iphdr.ip_sum = 0;
-  packet.iphdr.ip_sum = checksum((uint16_t *)&packet.iphdr, IP4_HDRLEN);
-
+  packet.iphdr.ip_sum = checksum((uint16_t *)&packet.iphdr, IP4_HDRLEN);*/
+  //Build UDP Header
+  udp = build_udp_header(payloadlen);
+  packet.udphdr = udp;
   // UDP header
-  packet.udphdr.source = htons(4950);
-  packet.udphdr.dest = htons(8045);
-  packet.udphdr.len = htons(
-      UDP_HDRLEN + payloadlen); // Length of Datagram = UDP Header + UDP Data
+  /*packet.udphdr.source = htons(src_port);
+  packet.udphdr.dest = htons(dst_port);
+  packet.udphdr.len = htons(UDP_HDRLEN + payloadlen); // Length of Datagram = UDP Header + UDP Data*/
   packet.udphdr.check = udp4_checksum(packet.iphdr, packet.udphdr,(uint8_t *)packet.payload, payloadlen);
 
   //let the Kernel know where to send the raw datagram
@@ -524,16 +531,15 @@ void send_raw_udp_packet(int seq, int ack,char *data, int flags) {
 }
 
 void send_raw_tcp_packet(int seq, int ack,char *data, int flags) {
-  struct tcp_packet packet;
-  struct sockaddr_in sin;
-  int sending_socket;
+  int sending_socket, payloadlen = 0;
   const int on = 1;
-  int payloadlen = 0;
-
-  //Build IP Header
   struct ip ip;
   struct tcphdr tcp;
-  ip = build_ip_header(IP4_HDRLEN,4,0,(IP4_HDRLEN + TCP_HDRLEN),0, 0,0,0,0,255),sizeof(packet.iphdr);
+  struct sockaddr_in sin;
+  struct tcp_packet packet;
+
+  //Build IP Header
+  ip = build_ip_header(IP4_HDRLEN,4,0,(IP4_HDRLEN + TCP_HDRLEN),0, 0,0,0,0,255, TCP);
   packet.iphdr = ip;
 
   //Build TCP Header
@@ -550,7 +556,7 @@ void send_raw_tcp_packet(int seq, int ack,char *data, int flags) {
 
   printf("Payload: %s\n", packet.payload);
 
-  //let the Kernel know where to send the raw datagram
+  //Let the Kernel know where to send the raw datagram
   //Fill the in_addr with the desired destination IP and pass the struct to sendto()
   memset(&sin, 0, sizeof(struct sockaddr_in));
   sin.sin_family = AF_INET;
@@ -589,7 +595,7 @@ void send_raw_tcp_packet(int seq, int ack,char *data, int flags) {
   //free(tcp_flags);
 }
 
-struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl) {
+struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl, int flag) {
   int status;
   int *ip_flags = (int *)calloc(4, sizeof(int));
   struct ip iphdr;
@@ -609,7 +615,13 @@ struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int fl
   ip_flags[3] = flag4;                    // Frag offset
   iphdr.ip_off = htons((ip_flags[0] << 15) + (ip_flags[1] << 14) +(ip_flags[2] << 13) + ip_flags[3]);
   iphdr.ip_ttl = ttl;       // TTL
-  iphdr.ip_p = IPPROTO_TCP; // Protocol
+  if( flag == TCP){
+    iphdr.ip_p = IPPROTO_TCP; // Protocol
+  }else if (flag == UDP){
+    iphdr.ip_p = IPPROTO_UDP; // Protocol 17 is UDP
+  }else if (flag == ICMP){
+    iphdr.ip_p = IPPROTO_ICMP; // Protocol 1 is ICMP
+  }
 
   // Source IPv4 address (32 bits)
   if ((status = inet_pton(AF_INET, src_ip, &(iphdr.ip_src))) != 1) {
@@ -710,6 +722,21 @@ struct tcphdr build_tcp_header(int src_port, int dst_port, int seq, int ack, int
 
   return tcphdr;
 }
-bool build_udp_header() {}
+struct udphdr build_udp_header(int payloadlen) {
+  struct udphdr udphdr;
+  udphdr.source = htons(src_port);
+  udphdr.dest = htons(dst_port);
+  udphdr.len = htons(UDP_HDRLEN + payloadlen); // Length of Datagram = UDP Header + UDP Data
+  return udphdr;
+}
 
-bool build_icmp_header() {}
+struct icmp build_icmp_header(int type, int code, int id, int seq) {
+  struct icmp icmphdr;
+  //ICMP_ECHO
+  icmphdr.icmp_type = type; // message type
+  icmphdr.icmp_code = code;         // message code - 0
+  icmphdr.icmp_id = htons(id); // usually PID of sending process
+  icmphdr.icmp_seq = htons(seq);   // starts at 0
+  icmphdr.icmp_cksum = 0;
+  return icmphdr;
+}

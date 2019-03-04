@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
   bool normal = false;
   bool tcp = false;
   bool udp = false;
-  //char interface_name[BUFSIZ];
+  char interface_name[BUFSIZ];
   char value[BUFSIZ];
 
   target = (char *)calloc(40, sizeof(char));
@@ -111,19 +111,20 @@ int main(int argc, char **argv) {
 
   // Interface to send packet through.
   interface = search_interface("wlp2s0");
-  src_port = 100;
+  src_port = 8045;
   dst_port = 8045;
   strcpy(src_ip, "192.168.1.85");
   strcpy(target, "192.168.1.81");
   hints = set_hints(AF_INET, SOCK_STREAM, hints.ai_flags | AI_CANONNAME);
   // Resolve target using getaddrinfo().
   dst_ip = resolve_host(target, hints);
-  send_raw_tcp_packet(0, 0, NULL, SYN);
+  send_raw_icmp_packet(0,0, "hello", SYN);
+  /*send_raw_tcp_packet(0, 0, NULL, SYN);
   // TODO: Make the filter more specific
   threewayhandshake = false;
   packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp",packet_info);
   threewayhandshake = true;
-  packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp",packet_info);
+  packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp",packet_info);*/
   // send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, 1, "HELLO", ACK);
   // threewayhandshake = true;
   // send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, 1, ACK);

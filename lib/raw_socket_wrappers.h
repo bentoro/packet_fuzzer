@@ -76,7 +76,9 @@ char *resolve_host(char *target, struct addrinfo hints);
 void send_raw_tcp_packet(int seq, int ack,char *data, int flags);
 void send_raw_udp_packet(int seq, int ack,char *data, int flags);
 void send_raw_icmp_packet(int seq, int ack,char *data, int flags);
-struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl);
+struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl, int flag);
 struct tcphdr build_tcp_header(int src_port, int dst_port, int seq, int ack, int reserved, int offset,int flags, int window_size, int urgent);
+struct udphdr build_udp_header(int payloadlen);
+struct icmp build_icmp_header(int type, int code, int id, int seq);
 
 #endif
