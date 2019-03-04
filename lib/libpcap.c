@@ -1,7 +1,8 @@
 #include "libpcap.h"
 
-struct packet_info packet_capture(char *FILTER, struct packet_info packet_info) {
-//int Packetcapture(char *FILTER) {
+struct packet_info packet_capture(char *FILTER,
+                                  struct packet_info packet_info) {
+  // int Packetcapture(char *FILTER) {
   char errorbuffer[PCAP_ERRBUF_SIZE];
   struct bpf_program fp; // holds fp program info
   pcap_if_t *interface_list;
@@ -28,14 +29,15 @@ struct packet_info packet_capture(char *FILTER, struct packet_info packet_info) 
     perror("pcap_setfilter");
   }
 
-  pcap_loop(interfaceinfo, -1, read_packet, (u_char*)&packet_info);
+  pcap_loop(interfaceinfo, -1, read_packet, (u_char *)&packet_info);
   return packet_info;
 }
 
-void read_packet(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
+void read_packet(u_char *args, const struct pcap_pkthdr *pkthdr,
+                 const u_char *packet) {
 
-  struct packet_info* packet_info = NULL;
-  packet_info = (struct packet_info *) args;
+  struct packet_info *packet_info = NULL;
+  packet_info = (struct packet_info *)args;
   // grab the type of packet
   struct ether_header *ethernet;
   u_char dst_host[ETHER_ADDR_LEN], src_host[ETHER_ADDR_LEN];
@@ -51,7 +53,8 @@ void read_packet(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *pa
   }
 }
 
-void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
+void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
+              const u_char *packet) {
   // const struct my_ip* ip;
   struct iphdr *ip;
   u_int length = pkthdr->len;
@@ -72,7 +75,9 @@ void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
   version = ip->version;
   off = ntohs(ip->frag_off);
 
-  //printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+  // printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+  // ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl,
+  // ip->protocol, ip->check, ip->saddr, ip->daddr);
   if (version != 4) {
     perror("Unknown error");
     exit(1);
@@ -87,7 +92,8 @@ void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
   }
 }
 
-void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
+void parse_tcp(struct packet_info *packet_info,
+               const struct pcap_pkthdr *pkthdr, const u_char *packet) {
   struct iphdr *ip;
   struct tcphdr *tcp;
   const u_char *payload;
@@ -113,42 +119,47 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
     perror("TCP: Control packet length is incorrect");
     exit(1);
   }
-  //dont print if rst packet
-  if(!tcp->rst){
-      printf("Source port: %d\n", ntohs(tcp->th_sport));
-      printf("Destination port: %d\n", ntohs(tcp->th_dport));
-      printf("Sequence #: %u\n", ntohl(tcp->seq));
-      packet_info->seq = ntohl(tcp->seq);
-      printf("Acknowledgement: %u \n", ntohl(tcp->ack_seq));
-      packet_info->ack = ntohl(tcp->ack_seq);
-      printf("Len: %d\n", ntohs(ip->tot_len));
-      if(tcp->fin && tcp->ack){
-          printf("FinAck: true\n");
-          packet_info->flag = FINACK;
-      }else if(tcp->syn && tcp->ack){
-          if(!threewayhandshake){
-              send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), NULL, ACK);
-              send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
-          }
-          // Interface to send packet through.
-          packet_info->flag = SYNACK;
-          printf("SynAck: true\n");
-      }else if(tcp->psh && tcp->ack){
-          printf("PshAck: true\n");
-          packet_info->flag = PSHACK;
-      }else if(tcp->syn){
-          printf("Syn: true\n");
-          packet_info->flag = SYN;
-      }else if (tcp->fin){
-          printf("Fin: true\n");
-          packet_info->flag = FIN;
-      }else if(tcp->rst){
-          printf("Rst: true\n");
-          packet_info->flag = RST;
-      }else if (tcp->ack){
-          packet_info->flag = ACK;
-          printf("Ack: true\n");
+  // dont print if rst packet
+  if (!tcp->rst) {
+    printf("Source port: %d\n", ntohs(tcp->th_sport));
+    printf("Destination port: %d\n", ntohs(tcp->th_dport));
+    printf("Sequence #: %u\n", ntohl(tcp->seq));
+    packet_info->seq = ntohl(tcp->seq);
+    printf("Acknowledgement: %u \n", ntohl(tcp->ack_seq));
+    packet_info->ack = ntohl(tcp->ack_seq);
+    printf("Len: %d\n", ntohs(ip->tot_len));
+    if (tcp->fin && tcp->ack) {
+      printf("FinAck: true\n");
+      packet_info->flag = FINACK;
+    } else if (tcp->syn && tcp->ack) {
+      if (!threewayhandshake) {
+        send_raw_tcp_packet(1,(ntohl(tcp->th_seq) + 1), NULL, ACK);
+        send_raw_tcp_packet(1,(ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
+      } else {
       }
+      // Interface to send packet through.
+      packet_info->flag = SYNACK;
+      printf("SynAck: true\n");
+    } else if (tcp->psh && tcp->ack) {
+      printf("PshAck: true\n");
+      packet_info->flag = PSHACK;
+        if(threewayhandshake){
+            send_raw_tcp_packet(6,6, NULL, ACK);
+            send_raw_tcp_packet(6,6, "HI", PSHACK);
+    }
+    } else if (tcp->syn) {
+      printf("Syn: true\n");
+      packet_info->flag = SYN;
+    } else if (tcp->fin) {
+      printf("Fin: true\n");
+      packet_info->flag = FIN;
+    } else if (tcp->rst) {
+      printf("Rst: true\n");
+      packet_info->flag = RST;
+    } else if (tcp->ack) {
+      packet_info->flag = ACK;
+      printf("Ack: true\n");
+    }
   }
 
   /*payload = (u_char *)(packet + 14 + size_ip + size_tcp);
@@ -161,11 +172,11 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
   pcap_breakloop(interfaceinfo);
 }
 
-void parse_payload(struct packet_info *packet_info, const u_char *payload, int len) {
+void parse_payload(struct packet_info *packet_info, const u_char *payload,
+                   int len) {
   struct iphdr *ip;
   struct tcphdr *tcp;
   printf("Payload: \n");
   printf("%s", payload);
   printf("%08X", payload); // print payload in HEX
 }
-
