@@ -72,7 +72,7 @@ void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
   version = ip->version;
   off = ntohs(ip->frag_off);
 
-  //printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+  printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n", ip->version,ip->ihl, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, htonl(ip->saddr), htonl(ip->daddr));
   if (version != 4) {
     perror("Unknown error");
     exit(1);
