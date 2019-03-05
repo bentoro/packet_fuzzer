@@ -33,17 +33,6 @@
 #define UDP 8
 #define ICMP 9
 
-struct packet_info {
-  int protocol;
-  int flag;
-  int ack;
-  int seq;
-  int src_port;
-  int dst_port;
-  int size; // amount of test cases
-  bool threewayhandshake;
-  bool endconnection;
-};
 
 struct tcp_packet {
   struct ip iphdr;
@@ -57,9 +46,27 @@ struct udp_packet {
   char payload[BUFSIZ];
 } udp_packet;
 
+struct icmp_packet{
+    struct ip iphdr;
+    struct icmp icmphdr;
+    char payload[BUFSIZ];
+} icmp_packet;
+
+struct packet_info {
+  int protocol;
+  int flag;
+  int ack;
+  int seq;
+  int size; // amount of test cases
+  struct tcp_packet *tcp_packet;
+  struct udp_packet *udp_packet;
+  struct icmp_packet *icmp_packet;
+  bool threewayhandshake;
+  bool endconnection;
+};
+
 int seq, src_port, dst_port;
 struct addrinfo hints;
-struct tcp_packet *testcases;
 char *target, *src_ip, *dst_ip;
 struct ifreq interface;
 struct packet_info packet_info;
@@ -73,12 +80,17 @@ int generate_rand(double value);
 struct addrinfo set_hints(int family, int socktype, int flags);
 struct ifreq search_interface(char *ifc);
 char *resolve_host(char *target, struct addrinfo hints);
-void send_raw_tcp_packet(int seq, int ack,char *data, int flags);
+void send_raw_tcp_packet(struct ip ip, struct tcphdr tcphdr,char *data);
+//void send_raw_tcp_packet(int seq, int ack,char *data, int flags);
 void send_raw_udp_packet(int seq, int ack,char *data, int flags);
 void send_raw_icmp_packet(int seq, int ack,char *data, int flags);
 struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl, int flag);
-struct tcphdr build_tcp_header(int src_port, int dst_port, int seq, int ack, int reserved, int offset,int flags, int window_size, int urgent);
+struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int flags, int window_size, int urgent);
 struct udphdr build_udp_header(int payloadlen);
 struct icmp build_icmp_header(int type, int code, int id, int seq);
+void print_raw_ip_packet(struct ip ip);
+void print_raw_tcp_packet(struct tcphdr tcphdr);
+void print_raw_udp_packet();
+void print_raw_icmp_packet();
 
 #endif

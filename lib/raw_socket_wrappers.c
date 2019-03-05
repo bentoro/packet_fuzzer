@@ -350,7 +350,7 @@ void send_raw_icmp_packet(int seq, int ack,char *data, int flags) {
   }
   printf("Payload(%i): %s\n", payloadlen, payload);
 
-  iphdr = build_ip_header(IP4_HDRLEN,4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, ICMP);
+  iphdr = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, ICMP);
   /*// IPv4 header
   iphdr.ip_hl = IP4_HDRLEN / sizeof(uint32_t);
   iphdr.ip_v = 4; // ip veriosn
@@ -455,7 +455,7 @@ void send_raw_udp_packet(int seq, int ack,char *data, int flags) {
 
 
   //Build IP Header
-  ip = build_ip_header(IP4_HDRLEN,4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, UDP);
+  ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, UDP);
   packet.iphdr = ip;
   /*// IP HEADER
   packet.iphdr.ip_hl = IP4_HDRLEN / sizeof(uint32_t);
@@ -530,20 +530,21 @@ void send_raw_udp_packet(int seq, int ack,char *data, int flags) {
   free(ip_flags);
 }
 
-void send_raw_tcp_packet(int seq, int ack,char *data, int flags) {
+
+void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
   int sending_socket, payloadlen = 0;
   const int on = 1;
-  struct ip ip;
-  struct tcphdr tcp;
+  //struct ip ip;
+  //struct tcphdr tcp;
   struct sockaddr_in sin;
   struct tcp_packet packet;
 
   //Build IP Header
-  ip = build_ip_header(IP4_HDRLEN,4,0,(IP4_HDRLEN + TCP_HDRLEN),0, 0,0,0,0,255, TCP);
+  //ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + TCP_HDRLEN),0, 0,0,0,0,255, TCP);
   packet.iphdr = ip;
 
   //Build TCP Header
-  tcp = build_tcp_header(src_port, dst_port,seq,ack,0, (TCP_HDRLEN/4), flags,64240,0);
+  //tcp = build_tcp_header(seq,ack,0, (TCP_HDRLEN/4), flags,64240,0);
   packet.tcphdr = tcp;
 
   //Check if there is a payload
@@ -590,17 +591,83 @@ void send_raw_tcp_packet(int seq, int ack,char *data, int flags) {
   }
   printf("Packet sent\n");
   close(sending_socket);
+}
   // Free allocated memory.
   //free(ip_flags);
   //free(tcp_flags);
+
+/*void send_raw_tcp_packet(int seq, int ack,char *data, int flags) {
+  int sending_socket, payloadlen = 0;
+  const int on = 1;
+  struct ip ip;
+  struct tcphdr tcp;
+  struct sockaddr_in sin;
+  struct tcp_packet packet;
+
+  //Build IP Header
+  ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + TCP_HDRLEN),0, 0,0,0,0,255, TCP);
+  packet.iphdr = ip;
+
+  //Build TCP Header
+  tcp = build_tcp_header(seq,ack,0, (TCP_HDRLEN/4), flags,64240,0);
+  packet.tcphdr = tcp;
+
+  //Check if there is a payload
+  if (data != NULL) {
+    sprintf (packet.payload, "%s", data);
+    payloadlen = strlen(packet.payload);
+  }
+  // payloadlen = strlen(packet.payload);
+  packet.tcphdr.th_sum = tcp4_checksum(packet.iphdr, packet.tcphdr,(uint8_t *)packet.payload, payloadlen);
+
+  printf("Payload: %s\n", packet.payload);
+
+  //Let the Kernel know where to send the raw datagram
+  //Fill the in_addr with the desired destination IP and pass the struct to sendto()
+  memset(&sin, 0, sizeof(struct sockaddr_in));
+  sin.sin_family = AF_INET;
+  sin.sin_addr.s_addr = packet.iphdr.ip_dst.s_addr;
+
+  // Submit request for a raw socket descriptor.
+  if ((sending_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
+    perror("socket() failed ");
+    exit(EXIT_FAILURE);
+  }
+  printf("Size of packet: %lu\n", sizeof(packet));
+  // Set flag so socket expects us to provide IPv4 header.
+  if (setsockopt(sending_socket, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
+    perror("setsockopt() failed to set IP_HDRINCL ");
+    exit(EXIT_FAILURE);
+  }
+
+  // Bind socket to interface index.
+  if (setsockopt(sending_socket, SOL_SOCKET, SO_BINDTODEVICE, &interface,sizeof(interface)) < 0) {
+    perror("setsockopt() failed to bind to interface ");
+    exit(EXIT_FAILURE);
+  }
+
+  // Send packet.
+  // if (sendto(sending_socket, &packet, IP4_HDRLEN + TCP_HDRLEN, 0, (struct
+  // sockaddr *)&sin, sizeof(struct sockaddr)) < 0) {
+  if (sendto(sending_socket, &packet, IP4_HDRLEN + TCP_HDRLEN + payloadlen, 0,
+             (struct sockaddr *)&sin, sizeof(sin)) < 0) {
+    perror("sendto() failed ");
+    exit(EXIT_FAILURE);
+  }
+  printf("Packet sent\n");
+  close(sending_socket);
 }
+  // Free allocated memory.
+  //free(ip_flags);
+  //free(tcp_flags);
+  */
 
 struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl, int flag) {
   int status;
   int *ip_flags = (int *)calloc(4, sizeof(int));
   struct ip iphdr;
   //default should be IP4_HDRLEN
-  iphdr.ip_hl = IHL / sizeof(uint32_t); // header length = 5
+  iphdr.ip_hl = IHL; // header length = 5
   iphdr.ip_v = version;                              // version = 4
   iphdr.ip_tos = tos;                            // TOS
   if(len = 0){
@@ -640,7 +707,7 @@ struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int fl
   return iphdr;
 }
 
-struct tcphdr build_tcp_header(int src_port, int dst_port, int seq, int ack, int reserved, int offset,int flags, int window_size, int urgent) {
+struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int flags, int window_size, int urgent) {
   int *tcp_flags;
   struct tcphdr tcphdr;
   tcp_flags = (int *)calloc(8, sizeof(int));
@@ -740,3 +807,20 @@ struct icmp build_icmp_header(int type, int code, int id, int seq) {
   icmphdr.icmp_cksum = 0;
   return icmphdr;
 }
+
+
+void print_raw_ip_packet(struct ip ip){
+   printf("%02x %02x %02x %i %02x %02x %i %02x %s %s %02x\n",ip.ip_hl,ip.ip_v, ip.ip_tos, ntohs(ip.ip_len), ip.ip_id, ip.ip_off, ip.ip_ttl,ip.ip_p, src_ip, dst_ip, ip.ip_sum);
+}
+void print_raw_tcp_packet(struct tcphdr tcphdr){
+   printf("%i %i %02x %i %02x %02x %02x %i %02x\n",src_port, dst_port,ntohl(tcphdr.th_seq), ntohl(tcphdr.th_ack),tcphdr.th_x2,tcphdr.th_off,tcphdr.th_flags, ntohs(tcphdr.th_win), ntohs(tcphdr.th_urp));
+
+}
+void print_raw_udp_packet(struct udphdr udphdr){
+
+}
+void print_raw_icmp_packet(struct icmp icmp){
+
+}
+
+

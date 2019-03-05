@@ -133,8 +133,8 @@ void parse_tcp(struct packet_info *packet_info,
       packet_info->flag = FINACK;
     } else if (tcp->syn && tcp->ack) {
       if (!threewayhandshake) {
-        send_raw_tcp_packet(1,(ntohl(tcp->th_seq) + 1), NULL, ACK);
-        send_raw_tcp_packet(1,(ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
+        //send_raw_tcp_packet(1,(ntohl(tcp->th_seq) + 1), NULL, ACK);
+        //send_raw_tcp_packet(1,(ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
       } else {
       }
       // Interface to send packet through.
@@ -144,8 +144,8 @@ void parse_tcp(struct packet_info *packet_info,
       printf("PshAck: true\n");
       packet_info->flag = PSHACK;
         if(threewayhandshake){
-            send_raw_tcp_packet(6,6, NULL, ACK);
-            send_raw_tcp_packet(6,6, "HI", PSHACK);
+            //send_raw_tcp_packet(6,6, NULL, ACK);
+            //send_raw_tcp_packet(6,6, "HI", PSHACK);
     }
     } else if (tcp->syn) {
       printf("Syn: true\n");
