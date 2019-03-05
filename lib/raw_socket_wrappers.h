@@ -58,13 +58,17 @@ struct packet_info {
   int ack;
   int seq;
   int size; // amount of test cases
-  struct tcp_packet *tcp_packet;
+  /*struct tcp_packet *tcp_packet;
   struct udp_packet *udp_packet;
-  struct icmp_packet *icmp_packet;
+  struct icmp_packet *icmp_packet;*/
   bool threewayhandshake;
   bool endconnection;
 };
 
+
+struct tcp_packet *tcp_packets;
+struct udp_packet *udp_packets;
+struct icmp_packet *icmp_packets;
 int seq, src_port, dst_port;
 struct addrinfo hints;
 char *target, *src_ip, *dst_ip;
@@ -81,9 +85,8 @@ struct addrinfo set_hints(int family, int socktype, int flags);
 struct ifreq search_interface(char *ifc);
 char *resolve_host(char *target, struct addrinfo hints);
 void send_raw_tcp_packet(struct ip ip, struct tcphdr tcphdr,char *data);
-//void send_raw_tcp_packet(int seq, int ack,char *data, int flags);
-void send_raw_udp_packet(int seq, int ack,char *data, int flags);
-void send_raw_icmp_packet(int seq, int ack,char *data, int flags);
+void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data);
+void send_raw_icmp_packet(struct ip ip, struct icmp icmphdr,char *data);
 struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl, int flag);
 struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int flags, int window_size, int urgent);
 struct udphdr build_udp_header(int payloadlen);

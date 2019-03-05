@@ -81,8 +81,8 @@ int main(int argc, char **argv) {
       // Interface to send packet through.
       interface = search_interface("wlp2s0");
       src_port = 8045;
-      packet_info.protocol = TCP;
-      printf("protocol: TCP\n");
+      packet_info.protocol = UDP;
+      printf("protocol: ICMP\n");
       printf("src_port: %i\n", src_port);
       dst_port = 8045;
       printf("dst_port: %i\n",dst_port);
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 
   // check if the file does not have a total amount of lines divisible by 3
   if (line_count % 3 == 0) {
-    printf("# test cases: %i\n", (line_count / 3));
+    printf("# test cases: %i \n\n", (line_count / 3));
     packet_info.size = (line_count/3);
     rewind(config_file);
   } else {
@@ -120,14 +120,14 @@ int main(int argc, char **argv) {
 
   // allocate space for the test cases
   if(packet_info.protocol == TCP){
-      printf("allocated room for TCP\n");
-      packet_info.tcp_packet = calloc((line_count/3), sizeof(tcp_packet));
+      printf("allocated room for TCP\n\n");
+      tcp_packets = calloc((line_count/3), sizeof(tcp_packet));
   }else if(packet_info.protocol == UDP){
-      printf("allocated room for UDP\n");
-      packet_info.udp_packet = calloc((line_count/3), sizeof(udp_packet));
+      printf("allocated room for UDP\n\n");
+      udp_packets = calloc((line_count/3), sizeof(udp_packet));
   }else if(packet_info.protocol == ICMP){
-      printf("allocated room for ICMP\n");
-      packet_info.icmp_packet = calloc((line_count/3), sizeof(icmp_packet));
+      printf("allocated room for ICMP\n\n");
+      icmp_packets = calloc((line_count/3), sizeof(icmp_packet));
   }
 
   while (fgets(buffer, sizeof(buffer), config_file) != NULL) {
@@ -137,7 +137,7 @@ int main(int argc, char **argv) {
     buffer[strlen(buffer) - 1] = ' ';
     int counter = 0;
     //store one line at a time
-    printf("%s\n\n", buffer);
+    //printf("%s\n\n", buffer);
     if(line != 3){
         for (int i = 0; i < (int)strlen(buffer); i++) {
           // if the line only contains a space move on to next line
@@ -164,41 +164,80 @@ int main(int argc, char **argv) {
     //printf("first: %s\n",temp[0]);
     if(line ==  1){
           if(packet_info.protocol == TCP){
-              printf("Filled IP Packet\n");
+              printf("Filled IP Packet\n\n");
               for(int k = 0; k < 12; k++){
                   printf("temp[%i]: %i\n",k,temp[k]);
               }
-              packet_info.tcp_packet[packet_info.size].iphdr = build_ip_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
-              print_raw_ip_packet(packet_info.tcp_packet[packet_info.size].iphdr);
+              tcp_packets[packet_info.size].iphdr = build_ip_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
+              print_raw_ip_packet(tcp_packets[packet_info.size].iphdr);
+
           }else if(packet_info.protocol == UDP){
-              printf("Filled IP Packet\n");
+              printf("Filled IP Packet\n\n");
+              for(int k = 0; k < 12; k++){
+                  printf("temp[%i]: %i\n",k,temp[k]);
+              }
+              udp_packets[packet_info.size].iphdr = build_ip_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
+              print_raw_ip_packet(udp_packets[packet_info.size].iphdr);
+
           }else if(packet_info.protocol == ICMP){
-              printf("Fileed ICMP Packet\n");
+              printf("Filled ICMP Packet\n\n");
+              for(int k = 0; k < 12; k++){
+                  printf("temp[%i]: %i\n",k,temp[k]);
+              }
+              icmp_packets[packet_info.size].iphdr = build_ip_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
+              print_raw_ip_packet(icmp_packets[packet_info.size].iphdr);
           }
           line++;
     } else if(line == 2){
           if(packet_info.protocol == TCP){
-              printf("Filled TCP Packet\n");
+              printf("Filled TCP Packet\n\n");
               for(int k = 0; k < 8; k++){
                   printf("temp[%i]: %i\n",k,temp[k]);
               }
-              packet_info.tcp_packet[packet_info.size].tcphdr = build_tcp_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6]);
-              print_raw_tcp_packet(packet_info.tcp_packet[packet_info.size].tcphdr);
+              tcp_packets[packet_info.size].tcphdr = build_tcp_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6]);
+              print_raw_tcp_packet(tcp_packets[packet_info.size].tcphdr);
           }else if(packet_info.protocol == UDP){
-              printf("Filled UDP Packet\n");
+              printf("Filled UDP Packet\n\n");
+              for(int k = 0; k < 1; k++){
+                  printf("temp[%i]: %i\n",k,temp[k]);
+              }
+              udp_packets[packet_info.size].udphdr = build_udp_header(temp[0]);
+              print_raw_udp_packet(udp_packets[packet_info.size].udphdr);
           }else if(packet_info.protocol == ICMP){
               printf("Filled ICMP Packet\n");
+              for(int k = 0; k < 5; k++){
+                  printf("temp[%i]: %i\n",k,temp[k]);
+              }
+              icmp_packets[packet_info.size].icmphdr = build_icmp_header(temp[0],temp[1],temp[2],temp[3]);
+              print_raw_icmp_packet(icmp_packets[packet_info.size].icmphdr);
           }
         line++;
     } else if(line == 3){
           if(packet_info.protocol == TCP){
-              printf("Filled TCP Payload\n");
-              strcpy(packet_info.tcp_packet[packet_info.size].payload, payload);
-              printf("payload: %s\n", packet_info.tcp_packet[packet_info.size].payload);
+              if(strcmp(payload, " ")){
+                  printf("Payload is empty\n\n");
+              } else {
+                  printf("Filled TCP Payload\n\n");
+                  strcpy(tcp_packets[packet_info.size].payload, payload);
+                  printf("payload: %s\n", tcp_packets[packet_info.size].payload);
+              }
           }else if(packet_info.protocol == UDP){
-              printf("Filled UDP Payload\n");
+              if(strcmp(payload, " ")){
+                  printf("Payload is empty\n\n");
+              } else {
+                  printf("Filled UDP Payload\n\n");
+                  strcpy(udp_packets[packet_info.size].payload, payload);
+                  printf("payload: %s\n", udp_packets[packet_info.size].payload);
+              }
           }else if(packet_info.protocol == ICMP){
               printf("Filled ICMP Payload\n");
+              if(strcmp(payload, " ")){
+                  printf("Payload is empty\n\n");
+              } else {
+                  printf("Filled ICMP Payload\n\n");
+                  strcpy(icmp_packets[packet_info.size].payload, payload);
+                  printf("payload: %s\n", icmp_packets[packet_info.size].payload);
+              }
           }
         line = 1;
     }
@@ -206,7 +245,11 @@ int main(int argc, char **argv) {
 
   }
   fclose(config_file);
-  send_raw_tcp_packet(packet_info.tcp_packet[packet_info.size].iphdr, packet_info.tcp_packet[packet_info.size].tcphdr, packet_info.tcp_packet[packet_info.size].payload);
+  //send_raw_tcp_packet(packet_info.tcp_packet[packet_info.size].iphdr, packet_info.tcp_packet[packet_info.size].tcphdr, packet_info.tcp_packet[packet_info.size].payload);
+  send_raw_udp_packet(build_ip_header(5,4,0,28,0,0,0,0,0,255,UDP), build_udp_header(8), NULL);
+  //send_raw_udp_packet(udp_packets[packet_info.size].iphdr, udp_packets[packet_info.size].udphdr, NULL);
+  //send_raw_icmp_packet(packet_info.icmp_packet[packet_info.size].iphdr, packet_info.icmp_packet[packet_info.size].icmphdr, packet_info.icmp_packet[packet_info.size].payload);
+  //send_raw_udp_packet(packet_info.udp_packet[packet_info.size].iphdr, packet_info.udp_packet[packet_info.size].udphdr, packet_info.udp_packet[packet_info.size].payload);
   //send_raw_tcp_packet(0,0, "hello", SYN);
   /*send_raw_tcp_packet(0, 0, NULL, SYN);
   // TODO: Make the filter more specific

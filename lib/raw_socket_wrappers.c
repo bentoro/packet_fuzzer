@@ -331,26 +331,25 @@ int generate_rand(double value) {
   return 1 + (int)(value * rand() / RAND_MAX + 1.0);
 }
 
-void send_raw_icmp_packet(int seq, int ack,char *data, int flags) {
-  int status, payloadlen, sd, *ip_flags;
+void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
+  int payloadlen = 0, sd;
   struct sockaddr_in sin;
-  struct ip iphdr;
-  struct icmp icmphdr;
+  //struct ip iphdr;
+  //struct icmp icmphdr;
   uint8_t *packet, *payload;
   const int on = 1;
 
   payload = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
   packet = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
-  ip_flags = (int *)calloc(4, sizeof(int));
 
   // ICMP data
-  if (data != NULL) {
+  if (strcmp(data, "")) {
     sprintf((char *)payload, "%s", data);
     payloadlen = strlen((const char *)payload);
   }
   printf("Payload(%i): %s\n", payloadlen, payload);
 
-  iphdr = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, ICMP);
+  //iphdr = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, ICMP);
   /*// IPv4 header
   iphdr.ip_hl = IP4_HDRLEN / sizeof(uint32_t);
   iphdr.ip_v = 4; // ip veriosn
@@ -379,7 +378,7 @@ void send_raw_icmp_packet(int seq, int ack,char *data, int flags) {
   iphdr.ip_sum = 0;
   iphdr.ip_sum = checksum((uint16_t *)&iphdr, IP4_HDRLEN);*/
   //Build ICMP Header
-  icmphdr = build_icmp_header(ICMP_ECHO,0,1000,0);
+  //icmphdr = build_icmp_header(ICMP_ECHO,0,1000,0);
   /*// ICMP header
   icmphdr.icmp_type = ICMP_ECHO; // message type
   icmphdr.icmp_code = 0;         // message code
@@ -431,22 +430,17 @@ void send_raw_icmp_packet(int seq, int ack,char *data, int flags) {
 
   // Close socket descriptor.
   close(sd);
-
   // Free allocated memory.
-  free(target);
-  free(src_ip);
-  free(dst_ip);
-  free(ip_flags);
+  free(payload);
+  free(packet);
 }
-void send_raw_udp_packet(int seq, int ack,char *data, int flags) {
+void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
   struct sockaddr_in sin;
   struct udp_packet packet;
-  int i, *ip_flags, *tcp_flags, status, sending_socket, payloadlen = 0;
+  int sending_socket, payloadlen = 0;
   const int on = 1;
-  struct ip ip;
-  struct udphdr udp;
-  ip_flags = (int *)calloc(4, sizeof(int));
-  tcp_flags = (int *)calloc(8, sizeof(int));
+  //struct ip ip;
+  //struct udphdr udp;
 
   if (data != NULL) {
     sprintf(packet.payload, "%s", data);
@@ -455,7 +449,7 @@ void send_raw_udp_packet(int seq, int ack,char *data, int flags) {
 
 
   //Build IP Header
-  ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, UDP);
+  //ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, UDP);
   packet.iphdr = ip;
   /*// IP HEADER
   packet.iphdr.ip_hl = IP4_HDRLEN / sizeof(uint32_t);
@@ -484,7 +478,7 @@ void send_raw_udp_packet(int seq, int ack,char *data, int flags) {
   packet.iphdr.ip_sum = 0;
   packet.iphdr.ip_sum = checksum((uint16_t *)&packet.iphdr, IP4_HDRLEN);*/
   //Build UDP Header
-  udp = build_udp_header(payloadlen);
+  //udp = build_udp_header(payloadlen);
   packet.udphdr = udp;
   // UDP header
   /*packet.udphdr.source = htons(src_port);
@@ -525,9 +519,6 @@ void send_raw_udp_packet(int seq, int ack,char *data, int flags) {
 
   // Close socket descriptor.
   close(sending_socket);
-
-  // Free allocated memory.
-  free(ip_flags);
 }
 
 
@@ -703,7 +694,7 @@ struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int fl
   }
   iphdr.ip_sum = 1;
   iphdr.ip_sum = checksum((uint16_t *)&iphdr, IP4_HDRLEN);
-
+  free(ip_flags);
   return iphdr;
 }
 
@@ -786,14 +777,14 @@ struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int fl
   //64240
   tcphdr.th_win = htons(window_size); // Window size
   tcphdr.th_urp = htons(urgent);     // Urgent Pointer
-
+  free(tcp_flags);
   return tcphdr;
 }
-struct udphdr build_udp_header(int payloadlen) {
+struct udphdr build_udp_header(int len) {
   struct udphdr udphdr;
   udphdr.source = htons(src_port);
   udphdr.dest = htons(dst_port);
-  udphdr.len = htons(UDP_HDRLEN + payloadlen); // Length of Datagram = UDP Header + UDP Data
+  udphdr.len = htons(len); // Length of Datagram = UDP Header + UDP Data
   return udphdr;
 }
 
@@ -817,9 +808,11 @@ void print_raw_tcp_packet(struct tcphdr tcphdr){
 
 }
 void print_raw_udp_packet(struct udphdr udphdr){
+   printf("%i %i %i\n",src_port, dst_port,ntohs(udphdr.len));
 
 }
 void print_raw_icmp_packet(struct icmp icmp){
+   printf("%i %i %i %i\n",icmp.icmp_type, icmp.icmp_code,ntohs(icmp.icmp_id), ntohs(icmp.icmp_seq));
 
 }
 
