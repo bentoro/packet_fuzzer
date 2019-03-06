@@ -336,17 +336,15 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
   struct sockaddr_in sin;
   //struct ip iphdr;
   //struct icmp icmphdr;
-  uint8_t *packet, *payload;
+  uint8_t packet[IP_MAXPACKET], payload[IP_MAXPACKET];
   const int on = 1;
 
-  payload = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
-  packet = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
+  //payload = (uint8_t *)malloc(IP_MAXPACKET*sizeof(uint8_t));
+  //packet = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
 
   // ICMP data
-  if (strcmp(data, "")) {
-    sprintf((char *)payload, "%s", data);
-    payloadlen = strlen((const char *)payload);
-  }
+  sprintf((char *)payload, "%s", data);
+  payloadlen = strlen((const char *)payload);
   printf("Payload(%i): %s\n", payloadlen, payload);
 
   //iphdr = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, ICMP);
@@ -431,8 +429,8 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
   // Close socket descriptor.
   close(sd);
   // Free allocated memory.
-  free(payload);
-  free(packet);
+  //free(payload);
+  //free(packet);
 }
 void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
   struct sockaddr_in sin;
@@ -509,8 +507,8 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
     perror("setsockopt() failed to bind to interface ");
     exit(EXIT_FAILURE);
   }
-
-  // Send packet.
+  printf("UDP Packet sent\n");
+  // Send packet`.
   if (sendto(sending_socket, &packet, IP4_HDRLEN + UDP_HDRLEN + payloadlen, 0,
              (struct sockaddr *)&sin, sizeof(struct sockaddr)) < 0) {
     perror("sendto() failed ");
@@ -673,7 +671,7 @@ struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int fl
   ip_flags[3] = flag4;                    // Frag offset
   iphdr.ip_off = htons((ip_flags[0] << 15) + (ip_flags[1] << 14) +(ip_flags[2] << 13) + ip_flags[3]);
   iphdr.ip_ttl = ttl;       // TTL
-  if( flag == TCP){
+  if(flag == TCP){
     iphdr.ip_p = IPPROTO_TCP; // Protocol
   }else if (flag == UDP){
     iphdr.ip_p = IPPROTO_UDP; // Protocol 17 is UDP
