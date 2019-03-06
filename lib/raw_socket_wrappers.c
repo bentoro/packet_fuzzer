@@ -449,6 +449,8 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
   //Build IP Header
   //ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, UDP);
   packet.iphdr = ip;
+  packet.iphdr.ip_len =  packet.iphdr.ip_len+ htons(payloadlen); // IP header + UDP header + payload len
+  packet.iphdr.ip_sum = checksum((uint16_t *)&packet.iphdr, IP4_HDRLEN);
   /*// IP HEADER
   packet.iphdr.ip_hl = IP4_HDRLEN / sizeof(uint32_t);
   packet.iphdr.ip_v = 4; // ip veriosn
@@ -528,19 +530,21 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
   struct sockaddr_in sin;
   struct tcp_packet packet;
 
+  if (data != NULL) {
+    sprintf (packet.payload, "%s", data);
+    payloadlen = strlen(packet.payload);
+  }
   //Build IP Header
   //ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + TCP_HDRLEN),0, 0,0,0,0,255, TCP);
   packet.iphdr = ip;
+  packet.iphdr.ip_len =  packet.iphdr.ip_len+ htons(payloadlen); // IP header + UDP header + payload len
+  packet.iphdr.ip_sum = checksum((uint16_t *)&packet.iphdr, IP4_HDRLEN);
 
   //Build TCP Header
   //tcp = build_tcp_header(seq,ack,0, (TCP_HDRLEN/4), flags,64240,0);
   packet.tcphdr = tcp;
 
   //Check if there is a payload
-  if (data != NULL) {
-    sprintf (packet.payload, "%s", data);
-    payloadlen = strlen(packet.payload);
-  }
   // payloadlen = strlen(packet.payload);
   packet.tcphdr.th_sum = tcp4_checksum(packet.iphdr, packet.tcphdr,(uint8_t *)packet.payload, payloadlen);
 

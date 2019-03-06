@@ -231,7 +231,7 @@ int main(int argc, char **argv) {
 
   }
   //send_raw_tcp_packet(tcp_packets[packet_info.size].iphdr, tcp_packets[packet_info.size].tcphdr, tcp_packets[packet_info.size].payload);
-  //send_raw_udp_packet(build_ip_header(5,4,0,28,0,0,0,0,0,255,UDP), build_udp_header(8), NULL);
+  send_raw_udp_packet(build_ip_header(5,4,0,28,0,0,0,0,0,255,UDP), build_udp_header(8), "HELLO");
   //send_raw_udp_packet(udp_packets[packet_info.size].iphdr, udp_packets[packet_info.size].udphdr, udp_packets[packet_info.size].payload);
   //send_raw_icmp_packet(build_ip_header(5,4,0,28, 0,0,0,0,0,255,ICMP), build_icmp_header(8, 0,1000,0), "hello");
   //send_raw_icmp_packet(icmp_packets[packet_info.size].iphdr, icmp_packets[packet_info.size].icmphdr, icmp_packets[packet_info.size].payload);
