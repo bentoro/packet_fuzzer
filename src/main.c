@@ -207,17 +207,17 @@ int main(int argc, char **argv) {
           } else {
           if(packet_info.protocol == TCP){
               printf("FILLED TCP PAYLOAD\n");
-              strcpy(tcp_packets[packet_info.size-casecount].payload, payload);
+              strncpy(tcp_packets[packet_info.size-casecount].payload, payload,strlen(payload)-1);
               printf("PAYLOAD: %s\n", tcp_packets[packet_info.size-casecount].payload);
               send_raw_tcp_packet(tcp_packets[packet_info.size-casecount].iphdr, tcp_packets[packet_info.size-casecount].tcphdr, tcp_packets[packet_info.size-casecount].payload);
           }else if(packet_info.protocol == UDP){
               printf("FILLED UDP PAYLOAD\n");
-              strcpy(udp_packets[packet_info.size-casecount].payload, payload);
+              strncpy(udp_packets[packet_info.size-casecount].payload, payload, strlen(payload)-1);
               printf("PAYLOAD: %s\n", udp_packets[packet_info.size].payload);
               send_raw_udp_packet(udp_packets[packet_info.size-casecount].iphdr, udp_packets[packet_info.size-casecount].udphdr, udp_packets[packet_info.size-casecount].payload);
           }else if(packet_info.protocol == ICMP){
               printf("FILLED ICMP PAYLOAD\n");
-              strcpy(icmp_packets[packet_info.size-casecount].payload, payload);
+              strncpy(icmp_packets[packet_info.size-casecount].payload, payload, strlen(payload) -1);
               printf("PAYLOAD: %s\n", icmp_packets[packet_info.size].payload);
               send_raw_icmp_packet(icmp_packets[packet_info.size-casecount].iphdr, icmp_packets[packet_info.size-casecount].icmphdr, icmp_packets[packet_info.size-casecount].payload);
           }
@@ -231,7 +231,7 @@ int main(int argc, char **argv) {
 
   }
   //send_raw_tcp_packet(tcp_packets[packet_info.size].iphdr, tcp_packets[packet_info.size].tcphdr, tcp_packets[packet_info.size].payload);
-  send_raw_udp_packet(build_ip_header(5,4,0,28,0,0,0,0,0,255,UDP), build_udp_header(8), "HELLO");
+  //send_raw_udp_packet(build_ip_header(5,4,0,28,0,0,0,0,0,255,UDP), build_udp_header(8), "HELLO");
   //send_raw_udp_packet(udp_packets[packet_info.size].iphdr, udp_packets[packet_info.size].udphdr, udp_packets[packet_info.size].payload);
   //send_raw_icmp_packet(build_ip_header(5,4,0,28, 0,0,0,0,0,255,ICMP), build_icmp_header(8, 0,1000,0), "hello");
   //send_raw_icmp_packet(icmp_packets[packet_info.size].iphdr, icmp_packets[packet_info.size].icmphdr, icmp_packets[packet_info.size].payload);

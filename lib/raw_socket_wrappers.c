@@ -346,6 +346,8 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
   //sprintf((char *)payload, "%s", data);
   payloadlen = strlen((const char *)data);
   printf("Payload(%i): %s\n", payloadlen, data);
+  iphdr.ip_len =  iphdr.ip_len+ htons(payloadlen); // IP header + UDP header + payload len
+  iphdr.ip_sum = checksum((uint16_t *)&iphdr, IP4_HDRLEN);
 
   //iphdr = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, ICMP);
   /*// IPv4 header
@@ -480,6 +482,7 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
   //Build UDP Header
   //udp = build_udp_header(payloadlen);
   packet.udphdr = udp;
+  packet.udphdr.len = packet.udphdr.len + htons(payloadlen);
   // UDP header
   /*packet.udphdr.source = htons(src_port);
   packet.udphdr.dest = htons(dst_port);
