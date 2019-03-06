@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #define IP4_HDRLEN 20 // Length of IPv4 Header
 #define TCP_HDRLEN 20 // Length of TCP Header
@@ -66,6 +67,7 @@ struct packet_info {
 };
 
 
+uint8_t *packet;
 struct tcp_packet *tcp_packets;
 struct udp_packet *udp_packets;
 struct icmp_packet *icmp_packets;
@@ -86,7 +88,8 @@ struct ifreq search_interface(char *ifc);
 char *resolve_host(char *target, struct addrinfo hints);
 void send_raw_tcp_packet(struct ip ip, struct tcphdr tcphdr,char *data);
 void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data);
-void send_raw_icmp_packet(struct ip ip, struct icmp icmphdr,char *data);
+//void send_raw_icmp_packet(uint8_t *packet, struct ip iphdr, struct icmp icmphdr,char *data);
+void send_raw_icmp_packet( struct ip iphdr, struct icmp icmphdr,char *data);
 struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl, int flag);
 struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int flags, int window_size, int urgent);
 struct udphdr build_udp_header(int payloadlen);

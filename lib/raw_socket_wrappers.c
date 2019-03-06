@@ -336,16 +336,16 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
   struct sockaddr_in sin;
   //struct ip iphdr;
   //struct icmp icmphdr;
-  uint8_t packet[IP_MAXPACKET], payload[IP_MAXPACKET];
+  uint8_t packet[IP_MAXPACKET];//payload[IP_MAXPACKET];
   const int on = 1;
 
   //payload = (uint8_t *)malloc(IP_MAXPACKET*sizeof(uint8_t));
   //packet = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
 
   // ICMP data
-  sprintf((char *)payload, "%s", data);
-  payloadlen = strlen((const char *)payload);
-  printf("Payload(%i): %s\n", payloadlen, payload);
+  //sprintf((char *)payload, "%s", data);
+  payloadlen = strlen((const char *)data);
+  printf("Payload(%i): %s\n", payloadlen, data);
 
   //iphdr = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, ICMP);
   /*// IPv4 header
@@ -389,10 +389,10 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
   // Copy the ICMP Header
   memcpy((packet + IP4_HDRLEN), &icmphdr, ICMP_HDRLEN);
   // Copy the ICMP payload
-  memcpy(packet + IP4_HDRLEN + ICMP_HDRLEN, payload, payloadlen);
+  memcpy(packet + IP4_HDRLEN + ICMP_HDRLEN, data, payloadlen);
 
   // Calculate ICMP header checksum
-  icmphdr.icmp_cksum = icmp4_checksum(icmphdr, payload, payloadlen);
+  icmphdr.icmp_cksum = icmp4_checksum(icmphdr, (uint8_t *)data, payloadlen);
   memcpy((packet + IP4_HDRLEN), &icmphdr, ICMP_HDRLEN);
 
   //let the Kernel know where to send the raw datagram
