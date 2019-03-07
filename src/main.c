@@ -85,6 +85,8 @@ int main(int argc, char **argv) {
       break;
     case 'x':
       // Interface to send packet through.
+      raw = false;
+      normal = true;
       interface = search_interface("wlp2s0");
       src_port = 8045;
       packet_info.protocol = UDP;
@@ -95,7 +97,7 @@ int main(int argc, char **argv) {
       printf("dst_port: %i\n",dst_port);
       strcpy(src_ip, "192.168.1.85");
       printf("src_ip: %s\n",src_ip);
-      strcpy(target, "192.168.1.81");
+      strcpy(target, "127.0.0.1");
       printf("dst_ip: %s\n",target);
       break;
     default: /* ? */
@@ -103,10 +105,12 @@ int main(int argc, char **argv) {
       exit(1);
     }
   }
-  hints = set_hints(AF_INET, SOCK_STREAM, hints.ai_flags | AI_CANONNAME);
-  // Resolve target using getaddrinfo().
-  dst_ip = resolve_host(target, hints);
-  // open config file
+  if(raw){
+      hints = set_hints(AF_INET, SOCK_STREAM, hints.ai_flags | AI_CANONNAME);
+      // Resolve target using getaddrinfo().
+      dst_ip = resolve_host(target, hints);
+      // open config file
+  }
   config_file = fopen("config", "r");
 
   // TODO: add validation
@@ -116,18 +120,21 @@ int main(int argc, char **argv) {
   }
 
   // check if the file does not have a total amount of lines divisible by 3
-  if (line_count % 3 == 0) {
-    printf("# test cases: %i \n\n", (line_count / 3));
-    packet_info.size = (line_count/3);
-    casecount = packet_info.size;
-    if(normal){
-        line = 3;
-    }
-    rewind(config_file);
+  if(raw){
+      if (line_count % 3 == 0) {
+        printf("# test cases: %i \n\n", (line_count / 3));
+        packet_info.size = (line_count/3);
+      } else {
+        printf("Incorrect information too many lines in config file\n");
+        exit(1);
+      }
   } else {
-    printf("Incorrect information too many lines in config file\n");
-    exit(1);
+        printf("# test cases: %i \n\n", (line_count));
+        packet_info.size = (line_count);
+        line = 3;
   }
+  casecount = packet_info.size;
+  rewind(config_file);
 
 
   // allocate space for the test cases
@@ -135,15 +142,15 @@ int main(int argc, char **argv) {
       printf("Allocated room for TCP\n\n");
       tcp_packets = calloc(1, sizeof(struct tcp_packet));
       if(normal){
-        sending_socket = start_tcp_client(dst_ip, string_port);
+        sending_socket = start_tcp_client(target, string_port);
       }
   }else if(packet_info.protocol == UDP){
       printf("Allocated room for UDP\n\n");
       udp_packets = calloc(1, sizeof(struct udp_packet));
       if(normal){
           hints = set_hints(AF_UNSPEC,SOCK_DGRAM, 0);
-          servinfo = set_addr_info(dst_ip, string_port, hints);
-          sending_socket = start_udp_client(dst_ip, string_port);
+          servinfo = set_addr_info(target, string_port, hints);
+          sending_socket = start_udp_client(target, string_port);
       }
   }else if(packet_info.protocol == ICMP){
       printf("Allocated room for ICMP\n\n");

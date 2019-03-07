@@ -38,16 +38,17 @@ struct addrinfo set_hints(int family, int socktype, int flags) {
   memset(&hints, 0, sizeof(hints));
   hints.ai_family = family;     // IPV4
   hints.ai_socktype = socktype; // TCP
-  hints.ai_flags = flags;
-
+  if(flags == 0){
+  }else {
+      hints.ai_flags = flags;
+  }
   return hints;
 }
 
 // node is the hostname to connect to
 // service is the port number
 // hints points to a addrinfo struct
-struct addrinfo set_addr_info(const char *address, const char *port,
-                              struct addrinfo hints) {
+struct addrinfo set_addr_info(const char *address, const char *port,struct addrinfo hints) {
   int status;
   struct addrinfo *servinfo;
 
@@ -76,33 +77,112 @@ void set_listen(int fd) {
   }
 }
 
-int make_connect(const char *address, const char *port) {
+int start_tcp_client(char *address, char *port){
+  int sockfd;
+  struct addrinfo *servinfo, *p, hints;
+  int rv;
+  char s[INET6_ADDRSTRLEN];
+
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_PASSIVE;
+
+  if ((rv = getaddrinfo(address, port, &hints, &servinfo)) != 0) {
+    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+    return 1;
+  }
+
+  for (p = servinfo; p != NULL; p = p->ai_next) {
+    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+      perror("client: socket");
+      continue;
+    }
+
+    if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+      close(sockfd);
+      perror("client: connect");
+      continue;
+    }
+    break;
+  }
+
+  if (p == NULL) {
+      perror("failed to connect\n");
+  }
+
+  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s,sizeof s);
+  printf("client: connecting to %s\n", s);
+  return(sockfd);
+}
+
+int start_udp_client(char *address, char *port){
+  int sockfd;
+  struct addrinfo *servinfo, *p, hints;
+  int rv;
+  char s[INET6_ADDRSTRLEN];
+
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_DGRAM;
+
+  if ((rv = getaddrinfo(address, port, &hints, &servinfo)) != 0) {
+    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+    return 1;
+  }
+
+  for (p = servinfo; p != NULL; p = p->ai_next) {
+    if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+      perror("client: socket");
+      continue;
+    }
+    break;
+  }
+
+  if (p == NULL) {
+      perror("failed to connect\n");
+  }
+
+  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s,sizeof s);
+  printf("client: connecting to %s\n", s);
+  return(sockfd);
+}
+
+int make_connect(const char *address, const char *port, int family, int socktype, int flags) {
   struct addrinfo hints;
   struct addrinfo *servinfo;
   struct addrinfo *p;
   int fd;
 
   memset(&hints, 0, sizeof(struct addrinfo));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_PASSIVE;
+  hints.ai_family = family;
+  hints.ai_socktype = socktype;
+  if(flags == 0){
+
+  } else {
+      hints.ai_flags = flags;
+  }
 
   if ((getaddrinfo(address, port, &hints, &servinfo)) != 0) {
     perror("getaddrinfo");
     exit(1);
   }
 
-  for (p = servinfo; p != NULL; p->ai_next) {
+  for (p = servinfo; p != NULL; p = p->ai_next) {
     if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-      perror("client: socket");
+      perror("socket");
       continue;
     }
     if ((connect(fd, p->ai_addr, p->ai_addrlen)) == -1) {
       close(fd);
-      perror("client:bind");
+      perror("bind");
       continue;
     }
     break;
+  }
+
+  if(p == NULL){
+        perror("failed to create socket\n");
   }
 
   freeaddrinfo(servinfo);
@@ -177,9 +257,7 @@ void send_normal_tcp_packet(int sending_socket, char *data, int length) {
   }
 }
 
-void send_normal_udp_packet(int sending_socket, char *data, int length,
-                            const struct sockaddr *dest_addr,
-                            socklen_t dest_len) {
+void send_normal_udp_packet(int sending_socket, char *data, int length,const struct sockaddr *dest_addr,socklen_t dest_len) {
   int total = 0;
   int bytes_left = length;
   int bytes_sent;
@@ -204,15 +282,11 @@ void recv_normal_tcp_packet(int socket, char *buf, size_t bufsize) {
   }
 }
 
-void recv_normal_udp_packet(int socket, char *buf, size_t bufsize,
-                            struct sockaddr_in client,
-                            socklen_t client_addr_len) {
+void recv_normal_udp_packet(int socket, char *buf, size_t bufsize,struct sockaddr *client,socklen_t client_addr_len) {
   int bytes_receieved, bytes_to_read;
   bytes_to_read = bufsize;
 
-  while ((bytes_receieved = recvfrom(socket, buf, bytes_to_read, 0,
-                                     (struct sockaddr *)&client,
-                                     &client_addr_len)) < (int)bufsize) {
+  while ((bytes_receieved = recvfrom(socket, buf, bytes_to_read, 0,client,&client_addr_len)) < (int)bufsize) {
     buf += bytes_receieved;
     bytes_to_read -= bytes_receieved;
   }

@@ -26,18 +26,6 @@ char *resolve_host(char *target, struct addrinfo hints) {
   return dst_ip;
 }
 
-// TODO: add to seperate library once working!
-struct addrinfo set_hints(int family, int socktype, int flags) {
-  struct addrinfo hints;
-  memset(&hints, 0, sizeof(hints));
-
-  hints.ai_family = family;     // IPV4
-  hints.ai_socktype = socktype; // TCP
-  hints.ai_flags = flags;
-
-  return hints;
-}
-
 struct ifreq search_interface(char *ifc) {
   // dont need to return socket as it is only used to search for the interface
   char *interface = (char *)malloc(40 * sizeof(char));
@@ -658,7 +646,7 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
   //free(tcp_flags);
   */
 
-struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl, int flag) {
+struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl, int flag){
   int status;
   int *ip_flags = (int *)calloc(4, sizeof(int));
   struct ip iphdr;
