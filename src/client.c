@@ -15,19 +15,25 @@
 
 int main(int argc, char *argv[]) {
   int sockfd;
+  struct addrinfo hints, servinfo;
+  struct sockaddr_storage their_addr;
+  socklen_t addr_len;
   char buf[BUFSIZE];
-  struct addrinfo hints, *servinfo, *p;
-  int rv;
-  char s[INET6_ADDRSTRLEN];
 
   if (argc != 2) {
     fprintf(stderr, "usage: client hostname\n");
     exit(1);
   }
 
-  memset(&hints, 0, sizeof hints);
+  hints = set_hints(AF_UNSPEC,SOCK_DGRAM, 0);
+  servinfo = set_addr_info(argv[1], PORT, hints);
+
+  sockfd = start_udp_client(argv[1], PORT);
+
+  /*memset(&hints, 0, sizeof hints);
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_PASSIVE;
 
   if ((rv = getaddrinfo(argv[1], PORT, &hints, &servinfo)) != 0) {
     fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
@@ -53,16 +59,14 @@ int main(int argc, char *argv[]) {
     return 2;
   }
 
-  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s,
-            sizeof s);
-  printf("client: connecting to %s\n", s);
-
-  freeaddrinfo(servinfo);
+  inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s,sizeof s);
+  printf("client: connecting to %s\n", s);*/
   while (1) {
     printf("Enter message to send: ");
     scanf("%s", buf);
-    send_normal_tcp_packet(sockfd, buf, sizeof(buf));
-    recv_normal_tcp_packet(sockfd, buf, sizeof(buf));
+    send_normal_udp_packet(sockfd, buf, sizeof(buf), servinfo.ai_addr, servinfo.ai_addrlen);
+    addr_len = sizeof(their_addr);
+    recv_normal_udp_packet(sockfd, buf, sizeof(buf),(struct sockaddr *)&their_addr, addr_len);
 
     printf("client: received '%s'\n", buf);
   }
