@@ -120,18 +120,18 @@ int main(int argc, char **argv) {
   }
 
   // check if the file does not have a total amount of lines divisible by 3
-  if(raw){
-      if (line_count % 3 == 0) {
-        printf("# test cases: %i \n\n", (line_count / 3));
-        packet_info.size = (line_count/3);
-      } else {
-        printf("Incorrect information too many lines in config file\n");
-        exit(1);
-      }
-  } else {
+  if(normal){
         printf("# test cases: %i \n\n", (line_count));
         packet_info.size = (line_count);
         line = 3;
+  } else {
+          if (line_count % 3 == 0) {
+            printf("# test cases: %i \n\n", (line_count / 3));
+            packet_info.size = (line_count/3);
+          } else {
+            printf("Incorrect information too many lines in config file\n");
+            exit(1);
+          }
   }
   casecount = packet_info.size;
   rewind(config_file);
@@ -165,8 +165,6 @@ int main(int argc, char **argv) {
     char value[BUFSIZ];
     buffer[strlen(buffer) - 1] = ' ';
     int counter = 0;
-    //store one line at a time
-    //printf("%s\n\n", buffer);
     if(line != 3 && !normal){
         for (int i = 0; i < (int)strlen(buffer); i++) {
           // if the line only contains a space move on to next line
@@ -190,7 +188,6 @@ int main(int argc, char **argv) {
     } else {
         strncpy(payload, buffer,sizeof(buffer));
     }
-    //printf("first: %s\n",temp[0]);
     if(line ==  1){
           if(packet_info.protocol == TCP){
               printf("Filled IP Packet\n");
