@@ -15,6 +15,8 @@ struct Data{
     char* data;
 };
 
+double fuzz_ratio = 0.35;
+
 int fuzz();
 int fuzz_payload();
 struct Queue* create_queue(unsigned capacity);

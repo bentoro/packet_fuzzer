@@ -18,7 +18,15 @@ int main(int argc, char **argv){
 int fuzz(){
 
 }
-int fuzz_payload(){
+int fuzz_payload(char *data, int size){
+    int byte;
+    int bytes_to_fuzz = size * fuzz_ratio;
+    for(int i =0; i <= bytes_to_fuzz; i++){
+        byte = rand() % 256;
+        data[byte] = rand() % 256;
+    }
+
+
 }
 
 void print_queue(struct Queue* queue){
