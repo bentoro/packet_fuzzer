@@ -27,6 +27,7 @@ int main(int argc, char **argv) {
   //TODO: Make the filter more specific
   threewayhandshake = false;
   packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
+
   //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, 1, "HELLO", ACK);
   //threewayhandshake = true;
   //send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, 1, ACK);
