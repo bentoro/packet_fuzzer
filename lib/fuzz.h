@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <stdbool.h>
+#include <math.h>
 
 struct Queue{
     int front, rear, size;
@@ -15,8 +18,13 @@ struct Data{
     char* data;
 };
 
+double fuzz_ratio = 0.50;
+
 int fuzz();
-int fuzz_payload();
+bool search(char *data, char *query,int length);
+int set_fuzz_ratio(double ratio);
+void initilize_rand();
+void fuzz_payload(char *data, int length);
 struct Queue* create_queue(unsigned capacity);
 void enqueue(struct Queue* queue, char* item);;
 char* dequeue(struct Queue* queue);
