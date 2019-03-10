@@ -1,8 +1,8 @@
 #include "fuzz.h"
 
-
+/*
 int main(int argc, char **argv){
-    /*struct Queue* queue = create_queue(10);
+    struct Queue* queue = create_queue(10);
     enqueue(queue, "one");
     enqueue(queue, "two");
     enqueue(queue, "three");
@@ -12,14 +12,14 @@ int main(int argc, char **argv){
     dequeue(queue);
     dequeue(queue);
     dequeue(queue);
-    dequeue(queue);*/
-    initilize_rand();
+    dequeue(queue);
+    printf("%i\n", rand() %65535);
     char data[BUFSIZ] = "asdfhellhellhello";
-    //fuzz_payload(data, strlen(data));
+    fuzz_payload(data, strlen(data));
     printf("found: %d\n", search(data, "hello",strlen(data)));
     printf("payload: %s\n",data);
 
-}
+}*/
 
 bool search(char *data, char *query,int length){
     int size = strlen(query);
@@ -52,13 +52,11 @@ int set_fuzz_ratio(double ratio){
     return ratio;
 }
 
-void initilize_rand(){
+int generate_rand(double value) {
     srand(time(NULL));
+  return (int)(rand() / value);
 }
 
-int fuzz(){
-
-}
 void fuzz_payload(char *data, int length){
     int bytes_to_fuzz = length * fuzz_ratio;
     for(int i = 0; i<= bytes_to_fuzz; i++){

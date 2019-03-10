@@ -325,11 +325,6 @@ uint16_t icmp4_checksum(struct icmp icmphdr, uint8_t *payload, int payloadlen) {
   return checksum((uint16_t *)buf, chksumlen);
 }
 
-int generate_rand(double value) {
-  time_t t;
-  srand((unsigned)time(&t));
-  return 1 + (int)(value * rand() / RAND_MAX + 1.0);
-}
 
 void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
   int payloadlen = 0, sd;
@@ -427,6 +422,7 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
     perror("sendto() failed ");
     exit(EXIT_FAILURE);
   }
+  printf(" ICMP Packet sent\n");
 
   // Close socket descriptor.
   close(sd);
@@ -512,7 +508,7 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
     perror("setsockopt() failed to bind to interface ");
     exit(EXIT_FAILURE);
   }
-  printf("UDP Packet sent\n");
+  printf(" UDP Packet sent\n");
   // Send packet`.
   if (sendto(sending_socket, &packet, IP4_HDRLEN + UDP_HDRLEN + payloadlen, 0,
              (struct sockaddr *)&sin, sizeof(struct sockaddr)) < 0) {
@@ -585,7 +581,7 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
     perror("sendto() failed ");
     exit(EXIT_FAILURE);
   }
-  printf("Packet sent\n");
+  printf(" TCP Packet sent\n");
   close(sending_socket);
 }
   // Free allocated memory.
@@ -663,21 +659,42 @@ struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int fl
   int *ip_flags = (int *)calloc(4, sizeof(int));
   struct ip iphdr;
   //default should be IP4_HDRLEN
-  iphdr.ip_hl = IHL; // header length = 5
-  iphdr.ip_v = version;                              // version = 4
-  iphdr.ip_tos = tos;                            // TOS
-  if(len = 0){
-      iphdr.ip_len =htons(IP4_HDRLEN + TCP_HDRLEN); // length: IP header + TCP header
+  if(IHL == 1337){
+      iphdr.ip_hl = generate_rand(65535); // header length = 5
+  } else {
+      iphdr.ip_hl = IHL; // header length = 5
+  }
+  if(version == 1337){
+    iphdr.ip_v = generate_rand(65535);                              // version = 4
+  }else {
+    iphdr.ip_v = version;                              // version = 4
+
+  }
+  if(tos == 1337){
+    iphdr.ip_tos = generate_rand(65535);                            // TOS
+  } else {
+    iphdr.ip_tos = tos;                            // TOS
+  }
+  if(len == 1337){
+      iphdr.ip_len =htons(generate_rand(65535)); // length: IP header + TCP header
   } else {
       iphdr.ip_len =htons(len); // length: IP header + TCP header
   }
-  iphdr.ip_id = htons(id);             // ID
+  if(id == 1337){
+      iphdr.ip_id = htons(generate_rand(65535));             // ID
+  }else {
+      iphdr.ip_id = htons(id);             // ID
+  }
   ip_flags[0] = flag1;                    // Zero
   ip_flags[1] = flag2;                    // Don't frag
   ip_flags[2] = flag3;                    // More frag
   ip_flags[3] = flag4;                    // Frag offset
   iphdr.ip_off = htons((ip_flags[0] << 15) + (ip_flags[1] << 14) +(ip_flags[2] << 13) + ip_flags[3]);
-  iphdr.ip_ttl = ttl;       // TTL
+  if(ttl == 1337){
+      iphdr.ip_ttl = generate_rand(65535);       // TTL
+  }else {
+      iphdr.ip_ttl = ttl;       // TTL
+  }
   if(flag == TCP){
     iphdr.ip_p = IPPROTO_TCP; // Protocol
   }else if (flag == UDP){
@@ -685,7 +702,6 @@ struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int fl
   }else if (flag == ICMP){
     iphdr.ip_p = IPPROTO_ICMP; // Protocol 1 is ICMP
   }
-
   // Source IPv4 address (32 bits)
   if ((status = inet_pton(AF_INET, src_ip, &(iphdr.ip_src))) != 1) {
     perror("inet_pton, src_ip");
@@ -708,24 +724,38 @@ struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int fl
   struct tcphdr tcphdr;
   tcp_flags = (int *)calloc(8, sizeof(int));
 
-  if (src_port == 0) {
-    tcphdr.th_sport = generate_rand(65535.0);
+  if (src_port == 1337) {
+    tcphdr.th_sport = generate_rand(65535);
   } else {
     tcphdr.th_sport = src_port;
   }
 
-  if (dst_port == 0) {
-    tcphdr.th_dport = generate_rand(65535.0);
+  if (dst_port == 1337) {
+    tcphdr.th_dport = generate_rand(65535);
   } else {
     tcphdr.th_dport = htons(dst_port);
   }
+  if(seq == 1337){
+    tcphdr.th_seq = htonl(generate_rand(65535)); // SEQ
+    printf("SEQ: %u \n", ntohl(tcphdr.th_seq));
+  } else {
+    tcphdr.th_seq = htonl(seq); // SEQ
+    printf("SEQ: %u \n", ntohl(tcphdr.th_seq));
+  }
+  if(ack == 1337){
+    tcphdr.th_ack = htonl(generate_rand(65535)); // ACK - 0 for first packet
+    printf("ACK: %u \n", ntohl(tcphdr.th_ack));
+  }else {
+    tcphdr.th_ack = htonl(ack); // ACK - 0 for first packet
+    printf("ACK: %u \n", ntohl(tcphdr.th_ack));
+  }
 
-  tcphdr.th_seq = htonl(seq); // SEQ
-  printf("SEQ: %u \n", ntohl(tcphdr.th_seq));
-  tcphdr.th_ack = htonl(ack); // ACK - 0 for first packet
-  printf("ACK: %u \n", ntohl(tcphdr.th_ack));
-  tcphdr.th_x2 = reserved;               // Reserved
-  //TCP_HDRLEN/4
+  if(reserved == 1337){
+    tcphdr.th_x2 = generate_rand(65535);               // Reserved
+    //TCP_HDRLEN/4
+  } else {
+    tcphdr.th_x2 = reserved;               // Reserved
+  }
   tcphdr.th_off = offset; // Offset
 
   // Flags (8 bits)
@@ -780,8 +810,17 @@ struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int fl
     tcphdr.th_flags += (tcp_flags[i] << i);
   }
   //64240
-  tcphdr.th_win = htons(window_size); // Window size
-  tcphdr.th_urp = htons(urgent);     // Urgent Pointer
+  if(window_size == 1337){
+    tcphdr.th_win = htons(generate_rand(65535)); // Window size
+  } else {
+    tcphdr.th_win = htons(window_size); // Window size
+  }
+
+  if(urgent == 1337){
+    tcphdr.th_urp = htons(generate_rand(65535));     // Urgent Pointer
+  }else {
+    tcphdr.th_urp = htons(urgent);     // Urgent Pointer
+  }
   free(tcp_flags);
   return tcphdr;
 }
@@ -789,7 +828,12 @@ struct udphdr build_udp_header(int len) {
   struct udphdr udphdr;
   udphdr.source = htons(src_port);
   udphdr.dest = htons(dst_port);
-  udphdr.len = htons(len); // Length of Datagram = UDP Header + UDP Data
+  if(len == 1337){
+    udphdr.len = htons(generate_rand(65535)); // Length of Datagram = UDP Header + UDP Data
+  }else {
+    udphdr.len = htons(len); // Length of Datagram = UDP Header + UDP Data
+  }
+
   return udphdr;
 }
 
@@ -797,27 +841,39 @@ struct icmp build_icmp_header(int type, int code, int id, int seq) {
   struct icmp icmphdr;
   //ICMP_ECHO
   icmphdr.icmp_type = type; // message type
-  icmphdr.icmp_code = code;         // message code - 0
-  icmphdr.icmp_id = htons(id); // usually PID of sending process
-  icmphdr.icmp_seq = htons(seq);   // starts at 0
+  if(code == 1337){
+      icmphdr.icmp_code = generate_rand(65535);         // message code - 0
+  } else {
+      icmphdr.icmp_code = code;         // message code - 0
+  }
+  if(id == 1337){
+      icmphdr.icmp_id = htons(generate_rand(65535)); // usually PID of sending process
+  }else {
+      icmphdr.icmp_id = htons(id); // usually PID of sending process
+  }
+  if(seq == 1337){
+      icmphdr.icmp_seq = htons(generate_rand(65535));   // starts at 0
+  } else {
+      icmphdr.icmp_seq = htons(seq);   // starts at 0
+  }
   icmphdr.icmp_cksum = 0;
   return icmphdr;
 }
 
 
 void print_raw_ip_packet(struct ip ip){
-   printf("%02x %02x %02x %i %02x %02x %i %02x %s %s %02x\n",ip.ip_hl,ip.ip_v, ip.ip_tos, ntohs(ip.ip_len), ip.ip_id, ip.ip_off, ip.ip_ttl,ip.ip_p, src_ip, dst_ip, ip.ip_sum);
+   printf(" %02x %02x %02x %i %02x %02x %i %02x %s %s %02x\n",ip.ip_hl,ip.ip_v, ip.ip_tos, ntohs(ip.ip_len), ip.ip_id, ip.ip_off, ip.ip_ttl,ip.ip_p, src_ip, dst_ip, ip.ip_sum);
 }
 void print_raw_tcp_packet(struct tcphdr tcphdr){
-   printf("%i %i %02x %i %02x %02x %02x %i %02x\n",src_port, dst_port,ntohl(tcphdr.th_seq), ntohl(tcphdr.th_ack),tcphdr.th_x2,tcphdr.th_off,tcphdr.th_flags, ntohs(tcphdr.th_win), ntohs(tcphdr.th_urp));
+   printf(" %i %i %02x %i %02x %02x %02x %i %02x\n",src_port, dst_port,ntohl(tcphdr.th_seq), ntohl(tcphdr.th_ack),tcphdr.th_x2,tcphdr.th_off,tcphdr.th_flags, ntohs(tcphdr.th_win), ntohs(tcphdr.th_urp));
 
 }
 void print_raw_udp_packet(struct udphdr udphdr){
-   printf("%i %i %i\n",src_port, dst_port,ntohs(udphdr.len));
+   printf(" %i %i %i\n",src_port, dst_port,ntohs(udphdr.len));
 
 }
 void print_raw_icmp_packet(struct icmp icmp){
-   printf("%i %i %i %i\n",icmp.icmp_type, icmp.icmp_code,ntohs(icmp.icmp_id), ntohs(icmp.icmp_seq));
+   printf(" %i %i %i %i\n",icmp.icmp_type, icmp.icmp_code,ntohs(icmp.icmp_id), ntohs(icmp.icmp_seq));
 
 }
 

@@ -4,8 +4,8 @@
 #include <time.h>
 #include <stdio.h>
 
-char * print_test_case();
 void print_time();
+void print_test_case();
 
 
 
