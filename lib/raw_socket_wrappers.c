@@ -25,7 +25,7 @@ char *resolve_host(char *target, struct addrinfo hints) {
   freeaddrinfo(res);
   return dst_ip;
 }
-
+/*
 // TODO: add to seperate library once working!
 struct addrinfo set_hints(int family, int socktype, int flags) {
   struct addrinfo hints;
@@ -36,7 +36,7 @@ struct addrinfo set_hints(int family, int socktype, int flags) {
   hints.ai_flags = flags;
 
   return hints;
-}
+}*/
 
 struct ifreq search_interface(char *ifc) {
   // dont need to return socket as it is only used to search for the interface
@@ -340,7 +340,6 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
   // ICMP data
   //sprintf((char *)payload, "%s", data);
   payloadlen = strlen((const char *)data);
-  printf("Payload(%i): %s\n", payloadlen, data);
   iphdr.ip_len =  iphdr.ip_len+ htons(payloadlen); // IP header + UDP header + payload len
   iphdr.ip_sum = checksum((uint16_t *)&iphdr, IP4_HDRLEN);
 
@@ -546,9 +545,6 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
   //Check if there is a payload
   // payloadlen = strlen(packet.payload);
   packet.tcphdr.th_sum = tcp4_checksum(packet.iphdr, packet.tcphdr,(uint8_t *)packet.payload, payloadlen);
-
-  printf("Payload: %s\n", packet.payload);
-
   //Let the Kernel know where to send the raw datagram
   //Fill the in_addr with the desired destination IP and pass the struct to sendto()
   memset(&sin, 0, sizeof(struct sockaddr_in));
@@ -560,7 +556,6 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
     perror("socket() failed ");
     exit(EXIT_FAILURE);
   }
-  printf("Size of packet: %lu\n", sizeof(packet));
   // Set flag so socket expects us to provide IPv4 header.
   if (setsockopt(sending_socket, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
     perror("setsockopt() failed to set IP_HDRINCL ");
@@ -737,17 +732,13 @@ struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int fl
   }
   if(seq == 1337){
     tcphdr.th_seq = htonl(generate_rand(65535)); // SEQ
-    printf("SEQ: %u \n", ntohl(tcphdr.th_seq));
   } else {
     tcphdr.th_seq = htonl(seq); // SEQ
-    printf("SEQ: %u \n", ntohl(tcphdr.th_seq));
   }
   if(ack == 1337){
     tcphdr.th_ack = htonl(generate_rand(65535)); // ACK - 0 for first packet
-    printf("ACK: %u \n", ntohl(tcphdr.th_ack));
   }else {
     tcphdr.th_ack = htonl(ack); // ACK - 0 for first packet
-    printf("ACK: %u \n", ntohl(tcphdr.th_ack));
   }
 
   if(reserved == 1337){
@@ -875,6 +866,12 @@ void print_raw_udp_packet(struct udphdr udphdr){
 void print_raw_icmp_packet(struct icmp icmp){
    printf(" %i %i %i %i\n",icmp.icmp_type, icmp.icmp_code,ntohs(icmp.icmp_id), ntohs(icmp.icmp_seq));
 
+}
+
+
+int generate_rand(double value) {
+    srand(time(NULL));
+  return (int)(rand() / value);
 }
 
 

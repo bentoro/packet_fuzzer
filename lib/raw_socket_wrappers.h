@@ -71,7 +71,7 @@ uint8_t *packet;
 struct tcp_packet *tcp_packets;
 struct udp_packet *udp_packets;
 struct icmp_packet *icmp_packets;
-int seq, src_port, dst_port;
+int src_port, dst_port;
 struct addrinfo hints;
 char *target, *src_ip, *dst_ip;
 struct ifreq interface;

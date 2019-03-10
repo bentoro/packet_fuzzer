@@ -1,5 +1,6 @@
 #include "../lib/libpcap.h"
 #include "../lib/raw_socket_wrappers.h"
+#include "../lib/normal_socket_wrappers.h"
 #include "../lib/logging.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,11 +19,16 @@ static void print_usage(void) {
 }
 
 int main(int argc, char **argv) {
-  int opt, line = 1, line_count = 0, casecount;
+  struct addrinfo hints, servinfo;
+  struct sockaddr client; //for sending normal udp packets
+  socklen_t client_addr_len; //for sending normal udp packets
+  int opt, line = 1, line_count = 0, casecount, sending_socket,bytes_receieved;
   FILE *config_file;
   char interface_name[BUFSIZ];
+  char receieved_data[BUFSIZ];
   char buffer[BUFSIZ];
   bool raw = false, tcp = false, udp = false, icmp = false, normal = true;
+  char string_port[BUFSIZ];
 
   target = (char *)calloc(40, sizeof(char));
   src_ip = (char *)calloc(INET_ADDRSTRLEN, sizeof(char));
@@ -80,12 +86,15 @@ int main(int argc, char **argv) {
       break;
     case 'x':
       // Interface to send packet through.
+      raw = true;
+      normal = false;
       interface = search_interface("wlp2s0");
       src_port = 8045;
-      packet_info.protocol = UDP;
-      printf("protocol: TCP\n");
+      packet_info.protocol = TCP;
+      printf("protocol: UDP\n");
       printf("src_port: %i\n", src_port);
       dst_port = 8045;
+      strcpy(string_port,"8045");
       printf("dst_port: %i\n",dst_port);
       strcpy(src_ip, "192.168.1.85");
       printf("src_ip: %s\n",src_ip);
@@ -97,14 +106,17 @@ int main(int argc, char **argv) {
       exit(1);
     }
   }
-  if(normal && icmp){
+  if(raw){
+      hints = set_hints(AF_INET, SOCK_STREAM, 0);
+      // Resolve target using getaddrinfo().
+      dst_ip = resolve_host(target, hints);
+      // open config file
+
+  }else if(normal && icmp){
       printf("If ICMP are to be used use normal sockets.\n");
       exit(0);
   }
 
-  hints = set_hints(AF_INET, SOCK_STREAM, hints.ai_flags | AI_CANONNAME);
-  // Resolve target using getaddrinfo().
-  dst_ip = resolve_host(target, hints);
   // open config file
   config_file = fopen("config", "r");
 
@@ -115,15 +127,21 @@ int main(int argc, char **argv) {
   }
 
   // check if the file does not have a total amount of lines divisible by 3
-  if (line_count % 3 == 0) {
-    printf("# test cases: %i \n\n", (line_count / 3));
-    packet_info.size = (line_count/3);
-    casecount = packet_info.size;
-    rewind(config_file);
+  if(normal){
+        printf("# test cases: %i \n\n", (line_count));
+        packet_info.size = (line_count);
+        line = 3;
   } else {
-    printf("Incorrect information too many lines in config file\n");
-    exit(1);
+          if (line_count % 3 == 0) {
+            printf("# test cases: %i \n\n", (line_count / 3));
+            packet_info.size = (line_count/3);
+          } else {
+            printf("Incorrect information too many lines in config file\n");
+            exit(1);
+          }
   }
+  casecount = packet_info.size;
+  rewind(config_file);
 
 
   // allocate space for the test cases
@@ -131,10 +149,20 @@ int main(int argc, char **argv) {
       print_time();
       printf(" Allocated room for TCP packet\n");
       tcp_packets = calloc(1, sizeof(struct tcp_packet));
+      if(normal){
+        print_time();
+        sending_socket = start_tcp_client(target, string_port);
+      }
   }else if(packet_info.protocol == UDP){
       print_time();
       printf(" Allocated room for UDP packet\n");
       udp_packets = calloc(1, sizeof(struct udp_packet));
+      if(normal){
+          print_time();
+          hints = set_hints(AF_UNSPEC,SOCK_DGRAM, 0);
+          servinfo = set_addr_info(target, string_port, hints);
+          sending_socket = start_udp_client(target, string_port);
+      }
   }else if(packet_info.protocol == ICMP){
       print_time();
       printf(" Allocated room for ICMP packet\n");
@@ -150,7 +178,7 @@ int main(int argc, char **argv) {
     int counter = 0;
     //store one line at a time
     //printf("%s\n\n", buffer);
-    if(line != 3){
+    if(line != 3 && !normal){
         for (int i = 0; i < (int)strlen(buffer); i++) {
           // if the line only contains a space move on to next line
           if (strlen(buffer) == 1) {
@@ -186,6 +214,7 @@ int main(int argc, char **argv) {
           print_time();
           printf(" Test case #%i \n", (packet_info.size-casecount + 1));
           if(packet_info.protocol == TCP){
+              memset(tcp_packets,'\0',sizeof(tcp_packet));
               tcp_packets[packet_info.size-casecount].iphdr = build_ip_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
               print_time();
               printf(" IP Header filled \n");
@@ -193,6 +222,7 @@ int main(int argc, char **argv) {
               print_raw_ip_packet(tcp_packets[packet_info.size-casecount].iphdr);
 
           }else if(packet_info.protocol == UDP){
+              memset(udp_packets,'\0',sizeof(udp_packet));
               udp_packets[packet_info.size-casecount].iphdr = build_ip_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
               print_time();
               printf(" IP Header filled \n");
@@ -200,6 +230,7 @@ int main(int argc, char **argv) {
               print_raw_ip_packet(udp_packets[packet_info.size-casecount].iphdr);
 
           }else if(packet_info.protocol == ICMP){
+              memset(icmp_packets,'\0',sizeof(icmp_packet));
               icmp_packets[packet_info.size-casecount].iphdr = build_ip_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
               print_time();
               printf(" IP Header filled \n");
@@ -238,21 +269,46 @@ int main(int argc, char **argv) {
                   printf("PAYLOAD IS EMPTY\n");
           } else {
           if(packet_info.protocol == TCP){
+              if(normal){
+                  print_time();
+                  printf(" Test case #%i \n", (packet_info.size-casecount + 1));
+              }
               strncpy(tcp_packets[packet_info.size-casecount].payload, payload,strlen(payload)-1);
               print_time();
               printf(" TCP Payload filled \n");
               print_time();
-              printf(" Payload: %s\n", tcp_packets[packet_info.size-casecount].payload);
-              print_time();
-              send_raw_tcp_packet(tcp_packets[packet_info.size-casecount].iphdr, tcp_packets[packet_info.size-casecount].tcphdr, tcp_packets[packet_info.size-casecount].payload);
+              printf(" Normal TCP Packet sent to %s - Payload: %s\n", target,tcp_packets[packet_info.size-casecount].payload);
+              if(normal){
+                  print_time();
+                  send_normal_tcp_packet(sending_socket, tcp_packets[packet_info.size-casecount].payload, strlen(tcp_packets[packet_info.size-casecount].payload));
+                  bytes_receieved = recv(sending_socket, receieved_data, sizeof(receieved_data),0);
+                  printf(" Received: %s \n", receieved_data);
+                  memset(receieved_data, '\0', sizeof(receieved_data));
+              } else {
+                  print_time();
+                  send_raw_tcp_packet(tcp_packets[packet_info.size-casecount].iphdr, tcp_packets[packet_info.size-casecount].tcphdr, tcp_packets[packet_info.size-casecount].payload);
+              }
           }else if(packet_info.protocol == UDP){
+              if(normal){
+                  print_time();
+                  printf(" Test case #%i \n", (packet_info.size-casecount + 1));
+              }
               strncpy(udp_packets[packet_info.size-casecount].payload, payload, strlen(payload)-1);
               print_time();
               printf(" UDP Payload filled \n");
               print_time();
-              printf(" Payload: %s\n", udp_packets[packet_info.size-casecount].payload);
-              print_time();
-              send_raw_udp_packet(udp_packets[packet_info.size-casecount].iphdr, udp_packets[packet_info.size-casecount].udphdr, udp_packets[packet_info.size-casecount].payload);
+              printf(" Normal Packet sent to %s - Payload: %s\n", target,udp_packets[packet_info.size-casecount].payload);
+
+              if(normal){
+                  send_normal_udp_packet(sending_socket, udp_packets[packet_info.size-casecount].payload, strlen(udp_packets[packet_info.size-casecount].payload), servinfo.ai_addr, servinfo.ai_addrlen);
+                  bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
+                  print_time();
+                  printf(" Received: %s \n", receieved_data);
+                  memset(receieved_data, '\0', sizeof(receieved_data));
+              } else {
+                  print_time();
+                  send_raw_udp_packet(udp_packets[packet_info.size-casecount].iphdr, udp_packets[packet_info.size-casecount].udphdr, udp_packets[packet_info.size-casecount].payload);
+              }
           }else if(packet_info.protocol == ICMP){
               strncpy(icmp_packets[packet_info.size-casecount].payload, payload, strlen(payload) -1);
               print_time();
@@ -266,10 +322,10 @@ int main(int argc, char **argv) {
           }
         printf("\n");
         casecount--;
-        line = 1;
-    }
-    // next line in the config file
-
+        if(!normal){
+            line = 1;
+        } //normal
+    } //line 3
   }
   //send_raw_tcp_packet(tcp_packets[packet_info.size].iphdr, tcp_packets[packet_info.size].tcphdr, tcp_packets[packet_info.size].payload);
   //send_raw_udp_packet(build_ip_header(5,4,0,28,0,0,0,0,0,255,UDP), build_udp_header(8), "HELLO");

@@ -7,7 +7,6 @@
 #include <time.h>
 #include <stdbool.h>
 #include <math.h>
-#include "fuzz.h"
 
 struct Queue{
     int front, rear, size;
@@ -21,7 +20,6 @@ struct Data{
 
 double fuzz_ratio = 0.50;
 
-int fuzz();
 bool search(char *data, char *query,int length);
 int set_fuzz_ratio(double ratio);
 void fuzz_payload(char *data, int length);
