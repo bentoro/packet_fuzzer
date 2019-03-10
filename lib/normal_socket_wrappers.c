@@ -108,11 +108,11 @@ int start_tcp_client(char *address, char *port){
   }
 
   if (p == NULL) {
-      perror("failed to connect\n");
+      perror("failed to connect\n\n");
   }
 
   inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s,sizeof s);
-  printf("client: connecting to %s\n", s);
+  printf(" Connected to %s\n", s);
   return(sockfd);
 }
 
@@ -144,7 +144,7 @@ int start_udp_client(char *address, char *port){
   }
 
   inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s,sizeof s);
-  printf("client: connecting to %s\n", s);
+  printf(" Connected to %s\n\n", s);
   return(sockfd);
 }
 

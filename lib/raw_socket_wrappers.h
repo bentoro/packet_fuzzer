@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #define IP4_HDRLEN 20 // Length of IPv4 Header
 #define TCP_HDRLEN 20 // Length of TCP Header
@@ -70,7 +71,7 @@ uint8_t *packet;
 struct tcp_packet *tcp_packets;
 struct udp_packet *udp_packets;
 struct icmp_packet *icmp_packets;
-int seq, src_port, dst_port;
+int src_port, dst_port;
 struct addrinfo hints;
 char *target, *src_ip, *dst_ip;
 struct ifreq interface;
@@ -82,6 +83,7 @@ uint16_t udp4_checksum(struct ip iphdr, struct udphdr udphdr, uint8_t *payload,i
 uint16_t icmp4_checksum(struct icmp icmphdr, uint8_t *payload, int payloadlen);
 uint16_t tcp4_checksum(struct ip iphdr, struct tcphdr tcphdr, uint8_t *payload,int payloadlen);
 int generate_rand(double value);
+struct addrinfo set_hints(int family, int socktype, int flags);
 struct ifreq search_interface(char *ifc);
 char *resolve_host(char *target, struct addrinfo hints);
 void send_raw_tcp_packet(struct ip ip, struct tcphdr tcphdr,char *data);
