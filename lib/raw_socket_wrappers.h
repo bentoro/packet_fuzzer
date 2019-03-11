@@ -18,6 +18,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <ctype.h>
+#include "libpcap.h"
 
 #define IP4_HDRLEN 20 // Length of IPv4 Header
 #define TCP_HDRLEN 20 // Length of TCP Header
@@ -98,5 +99,6 @@ void print_raw_ip_packet(struct ip ip);
 void print_raw_tcp_packet(struct tcphdr tcphdr);
 void print_raw_udp_packet();
 void print_raw_icmp_packet();
+void three_way_handshake(int window_size);
 
 #endif

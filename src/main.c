@@ -111,7 +111,6 @@ int main(int argc, char **argv) {
       // Resolve target using getaddrinfo().
       dst_ip = resolve_host(target, hints);
       // open config file
-
   }else if(normal && icmp){
       printf("If ICMP are to be used use normal sockets.\n");
       exit(0);
@@ -324,29 +323,9 @@ int main(int argc, char **argv) {
         casecount--;
         if(!normal){
             line = 1;
-        } //normal
-    } //line 3
+        }
+    }
   }
-  //send_raw_tcp_packet(tcp_packets[packet_info.size].iphdr, tcp_packets[packet_info.size].tcphdr, tcp_packets[packet_info.size].payload);
-  //send_raw_udp_packet(build_ip_header(5,4,0,28,0,0,0,0,0,255,UDP), build_udp_header(8), "HELLO");
-  //send_raw_udp_packet(udp_packets[packet_info.size].iphdr, udp_packets[packet_info.size].udphdr, udp_packets[packet_info.size].payload);
-  //send_raw_icmp_packet(build_ip_header(5,4,0,28, 0,0,0,0,0,255,ICMP), build_icmp_header(8, 0,1000,0), "hello");
-  //send_raw_icmp_packet(icmp_packets[packet_info.size].iphdr, icmp_packets[packet_info.size].icmphdr, icmp_packets[packet_info.size].payload);
-  //send_raw_udp_packet(packet_info.udp_packet[packet_info.size].iphdr, packet_info.udp_packet[packet_info.size].udphdr, packet_info.udp_packet[packet_info.size].payload);
-  //send_raw_tcp_packet(0,0, "hello", SYN);
-  /*send_raw_tcp_packet(0, 0, NULL, SYN);
-  // TODO: Make the filter more specific
-  threewayhandshake = false;
-  packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp",packet_info);
-  threewayhandshake = true;
-  packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp",packet_info);*/
-  // send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, 1, "HELLO", ACK);
-  // threewayhandshake = true;
-  // send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, 1, ACK);
-  // send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 0, 0, ACK);
-  // packet_info = packet_capture("src 192.168.1.72 and dst 192.168.1.86 and
-  // tcp", packet_info);
-
   //fclose(config_file);
   free(target);
   free(src_ip);

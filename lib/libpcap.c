@@ -132,8 +132,8 @@ void parse_tcp(struct packet_info *packet_info,
       printf("FinAck: true\n");
       packet_info->flag = FINACK;
     } else if (tcp->syn && tcp->ack) {
-      if (!threewayhandshake) {
-        //send_raw_tcp_packet(1,(ntohl(tcp->th_seq) + 1), NULL, ACK);
+      if (packet_info->threewayhandshake) {
+        send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,TCP),build_tcp_header(0,0,0,5,ACK,64240,0), NULL);
         //send_raw_tcp_packet(1,(ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
       } else {
       }
@@ -179,4 +179,28 @@ void parse_payload(struct packet_info *packet_info, const u_char *payload,
   printf("Payload: \n");
   printf("%s", payload);
   printf("%08X", payload); // print payload in HEX
+}
+
+void create_filter(char *FILTER){
+    memset(FILTER, '\0', BUFSIZ);
+    if(packet_info.protocol == TCP){
+        strcat(FILTER, "src ");
+        strcat(FILTER, src_ip);
+        strcat(FILTER," dst ");
+        strcat(FILTER, target);
+        strcat(FILTER," and tcp");
+    } else if(packet_info.protocol == UDP){
+        strcat(FILTER, "src ");
+        strcat(FILTER, src_ip);
+        strcat(FILTER," dst ");
+        strcat(FILTER, target);
+        strcat(FILTER," and udp");
+    }else if(packet_info.protocol == ICMP){
+        strcat(FILTER, "src ");
+        strcat(FILTER, src_ip);
+        strcat(FILTER," dst ");
+        strcat(FILTER, target);
+        strcat(FILTER," and icmp");
+    }
+    printf("FILTER: %s\n",FILTER);
 }
