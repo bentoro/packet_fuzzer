@@ -139,10 +139,9 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
           printf("SynAck: true\n");
       }else if(tcp->psh && tcp->ack){
           printf("PshAck: true\n");
-          if(threewayhandshake){
-            printf("Payload (%d bytes): %s\n", size_payload, payload);
-            //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->ack_seq)),(char *)payload, ACK);
-          }
+          printf("Payload (%d bytes): %s\n", size_payload, payload);
+          send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->ack_seq)),NULL, ACK);
+          send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->ack_seq)), "PLEASE", PSHACK);
           packet_info->flag = PSHACK;
       }else if(tcp->syn){
           printf("Syn: true\n");
@@ -164,7 +163,7 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
     printf("Payload (%d bytes):\n", size_payload);
     //parse_payload(packet_info,payload, size_payload);
   }*/
-  //pcap_breakloop(interfaceinfo);
+  pcap_breakloop(interfaceinfo);
 }
 
 void parse_payload(struct packet_info *packet_info, const u_char *payload, int len) {
