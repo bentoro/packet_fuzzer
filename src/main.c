@@ -10,6 +10,8 @@ int main(int argc, char **argv) {
     printf("Must run as root\n");
     exit(1);
   }
+  int recv_socket, bytes_recv;
+  char data[BUFSIZ];
 
   target = (char *) calloc (40, sizeof(char));
   src_ip = (char *) calloc (INET_ADDRSTRLEN, sizeof(char));
@@ -26,8 +28,26 @@ int main(int argc, char **argv) {
   send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 0, 0, NULL, SYN);
   //TODO: Make the filter more specific
   threewayhandshake = false;
+
   packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
 
+    if((recv_socket = socket(AF_INET, SOCK_RAW, 6)) < 0) {
+        perror("receiving socket failed to open (root maybe required)");
+    }
+
+    bytes_recv = recv(recv_socket, data, sizeof(data), 0);
+    printf("data: %s\n", data);
+  //threewayhandshake = true;
+  //sleep(1);
+  //packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
+/*
+    if((recv_socket = socket(AF_INET, SOCK_RAW, 0)) < 0) {
+        perror("receiving socket failed to open (root maybe required)");
+    }
+
+    bytes_recv = recv(recv_socket, data, sizeof(data), 0);
+    printf("data: %s\n", data);
+    */
   //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, 1, "HELLO", ACK);
   //threewayhandshake = true;
   //send_raw_tcp_packet(100, 8040, ifr, src_ip,dst_ip, 1, 1, ACK);
