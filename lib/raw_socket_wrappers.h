@@ -77,6 +77,7 @@ struct addrinfo hints;
 char *target, *src_ip, *dst_ip;
 struct ifreq interface;
 struct packet_info packet_info;
+bool replay;
 bool threewayhandshake;
 
 uint16_t checksum(uint16_t *, int);

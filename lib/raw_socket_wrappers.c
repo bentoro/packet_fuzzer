@@ -874,11 +874,11 @@ int generate_rand(double value) {
 }
 
 void three_way_handshake(int window_size){
-    char FILTER[BUFSIZ];
+    char filter[BUFSIZ];
 
-    create_filter(FILTER);
+    create_filter(filter);
     packet_info.threewayhandshake = true;
     send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,TCP),build_tcp_header(0,0,0,5,SYN,window_size,0), NULL);
-    packet_info = packet_capture(FILTER, packet_info);
+    packet_info = packet_capture(filter, packet_info);
     packet_info.threewayhandshake = false;
 }

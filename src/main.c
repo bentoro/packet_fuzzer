@@ -1,39 +1,9 @@
-#include "../lib/libpcap.h"
-#include "../lib/raw_socket_wrappers.h"
-#include "../lib/normal_socket_wrappers.h"
-#include "../lib/logging.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-static void print_usage(void) {
-  puts("Usage options: \n"
-       "\t-h  -   Host machine ip \n"
-       "\t-t  -   Target machine ip\n"
-       "\t-s  -   Source port\n"
-       "\t-d  -   Destination port\n"
-       "\t-p  -   Protocol type, TCP = 7, UDP = 8, ICMP = 9\n"
-       "\t-r  -   Raw sockets (if false normal sockets will be used)\n"
-       "\t-i  -   Interface to send packets\n"
-       "\t-x  -   Test\n");
-}
+#include "main.h"
 
 int main(int argc, char **argv) {
-  struct addrinfo hints, servinfo;
-  struct sockaddr client; //for sending normal udp packets
-  socklen_t client_addr_len; //for sending normal udp packets
-  int opt, line = 1, line_count = 0, casecount, sending_socket,bytes_receieved;
-  FILE *config_file;
-  char interface_name[BUFSIZ];
-  char receieved_data[BUFSIZ];
-  char buffer[BUFSIZ];
-  bool raw = false, tcp = false, udp = false, icmp = false, normal = true;
-  char string_port[BUFSIZ];
-
   target = (char *)calloc(40, sizeof(char));
   src_ip = (char *)calloc(INET_ADDRSTRLEN, sizeof(char));
   dst_ip = (char *)calloc(INET_ADDRSTRLEN, sizeof(char));
-
   //Check if user is Root
   if (geteuid() != 0) {
     printf("Must run as root\n");
@@ -90,7 +60,7 @@ int main(int argc, char **argv) {
       normal = false;
       interface = search_interface("wlp2s0");
       src_port = 8045;
-      packet_info.protocol = TCP;
+      packet_info.protocol = ICMP;
       printf("protocol: UDP\n");
       printf("src_port: %i\n", src_port);
       dst_port = 8045;
@@ -107,6 +77,8 @@ int main(int argc, char **argv) {
     }
   }
   if(raw){
+      print_time();
+      create_filter(filter);
       hints = set_hints(AF_INET, SOCK_STREAM, 0);
       // Resolve target using getaddrinfo().
       dst_ip = resolve_host(target, hints);
@@ -118,7 +90,7 @@ int main(int argc, char **argv) {
 
   // open config file
   config_file = fopen("config", "r");
-
+  replay = false;
   // TODO: add validation
   // check how many testcases to create
   while (fgets(buffer, sizeof(buffer), config_file) != NULL) {
@@ -259,10 +231,10 @@ int main(int argc, char **argv) {
               printf(" ICMP Header filled \n");
               print_time();
               print_raw_icmp_packet(icmp_packets[packet_info.size-casecount].icmphdr);
-
           }
         line++;
     } else if(line == 3){
+replaypacket:
           if(payload[0] == ' '){
                   print_time();
                   printf("PAYLOAD IS EMPTY\n");
@@ -316,6 +288,11 @@ int main(int argc, char **argv) {
               printf(" Payload: %s\n", icmp_packets[packet_info.size-casecount].payload);
               print_time();
               send_raw_icmp_packet(icmp_packets[packet_info.size-casecount].iphdr, icmp_packets[packet_info.size-casecount].icmphdr, icmp_packets[packet_info.size-casecount].payload);
+              packet_info = packet_capture(filter, packet_info);
+              if(replay == true){
+                replay = false;
+                goto replaypacket;
+              }
           }
 
           }

@@ -1,7 +1,6 @@
 #include "libpcap.h"
 
-struct packet_info packet_capture(char *FILTER,
-                                  struct packet_info packet_info) {
+struct packet_info packet_capture(char *FILTER,struct packet_info packet_info) {
   // int Packetcapture(char *FILTER) {
   char errorbuffer[PCAP_ERRBUF_SIZE];
   struct bpf_program fp; // holds fp program info
@@ -15,26 +14,22 @@ struct packet_info packet_capture(char *FILTER,
   }
 
   // open the network device
-  if ((interfaceinfo = pcap_open_live(interface_list->name, BUFSIZ, 1, -1,
-                                      errorbuffer)) == NULL) {
+  if ((interfaceinfo = pcap_open_live(interface_list->name, BUFSIZ, 1, -1,errorbuffer)) == NULL) {
     printf("pcap_open_live(): %s\n", errorbuffer);
     exit(0);
   }
 
-  if (pcap_compile(interfaceinfo, &fp, FILTER, 0, netp) == -1) {
-    perror("pcap_comile");
+  if (pcap_compile(interfaceinfo, &fp, FILTER, 0, netp) != 0) {
   }
 
-  if (pcap_setfilter(interfaceinfo, &fp) == -1) {
-    perror("pcap_setfilter");
+  if (pcap_setfilter(interfaceinfo, &fp) != 0) {
   }
 
   pcap_loop(interfaceinfo, -1, read_packet, (u_char *)&packet_info);
   return packet_info;
 }
 
-void read_packet(u_char *args, const struct pcap_pkthdr *pkthdr,
-                 const u_char *packet) {
+void read_packet(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
 
   struct packet_info *packet_info = NULL;
   packet_info = (struct packet_info *)args;
@@ -53,9 +48,7 @@ void read_packet(u_char *args, const struct pcap_pkthdr *pkthdr,
   }
 }
 
-void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
-              const u_char *packet) {
-  // const struct my_ip* ip;
+void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
   struct iphdr *ip;
   u_int length = pkthdr->len;
   u_int hlen, off, version;
@@ -75,50 +68,78 @@ void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
   version = ip->version;
   off = ntohs(ip->frag_off);
 
-  // printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
-  // ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl,
-  // ip->protocol, ip->check, ip->saddr, ip->daddr);
-  if (version != 4) {
-    perror("Unknown error");
-    exit(1);
-  } else if (hlen < 5) {
-    perror("Bad header length");
-    exit(1);
-  } else if (length < (u_int)len) {
-    perror("Truncated IP");
-    exit(1);
-  } else if (ip->protocol == IPPROTO_TCP) {
-    parse_tcp(packet_info, pkthdr, packet);
+  if(packet_info->protocol == TCP){
+      if(ip->protocol == IPPROTO_TCP){
+        print_time();
+        printf(" Receieved: \n");
+        print_time();
+        printf(" %02x %02x %02x %02x %02x %02x %02x %02x %u %u %u\n",ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl,ip->protocol, ip->check, ip->saddr, ip->daddr);
+        parse_tcp(packet_info, pkthdr, packet);
+      }
+  } else if(packet_info->protocol == ICMP){
+    if (ip->protocol == IPPROTO_ICMP) {
+        print_time();
+        printf(" Receieved: \n");
+        print_time();
+        printf(" %02x %02x %02x %02x %02x %02x %02x %02x %u %u %u\n",ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl,ip->protocol, ip->check, ip->saddr, ip->daddr);
+        parse_icmp(packet_info, pkthdr, packet);
+    } else {
+        print_time();
+        printf(" No reply receieved, Resending last packet\n");
+        replay = true;
+
+    }
+  }else if(packet_info->protocol == UDP){
+      if(ip->protocol == IPPROTO_UDP){
+        print_time();
+        printf(" Receieved: \n");
+        print_time();
+        printf(" %02x %02x %02x %02x %02x %02x %02x %02x %u %u %u\n",ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl,ip->protocol, ip->check, ip->saddr, ip->daddr);
+        parse_udp(packet_info, pkthdr, packet);
+      }
+  } else {
   }
+  pcap_breakloop(interfaceinfo);
 }
 
-void parse_tcp(struct packet_info *packet_info,
-               const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+void parse_udp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+
+}
+void parse_icmp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr, const u_char *packet){
+  struct iphdr *ip;
+  struct icmp *icmp;
+  const u_char *payload;
+  int size_ip;
+  int size_icmp;
+  int size_payload;
+  packet_info->protocol = ICMP;
+  ip = (struct iphdr *)(packet + SIZE_ETHERNET);
+  size_ip = ip->ihl * 4;
+  icmp = (struct icmp *)(packet + SIZE_ETHERNET + size_ip);
+  size_icmp = ICMP_HDRLEN;
+  print_time();
+  printf(" %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
+  payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_icmp);
+  size_payload = ntohs(ip->tot_len) - (size_ip + size_icmp);
+  print_time();
+  printf(" %s\n", payload);
+  pcap_breakloop(interfaceinfo);
+}
+void parse_tcp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr, const u_char *packet) {
   struct iphdr *ip;
   struct tcphdr *tcp;
   const u_char *payload;
   int size_ip;
-  int size_tcp;
   int size_payload;
 
   printf("\nTCP Packet\n");
   packet_info->protocol = TCP;
 
-  ip = (struct iphdr *)(packet + 14);
-  // size_ip = IP_HL(ip)*4;
-  // tcp = (struct sniff_tcp*)(packet + 14 + size_ip);
-  // size_tcp = TH_OFF(tcp)*4;
-  // header length is IHL * 4
+  ip = (struct iphdr *)(packet + SIZE_ETHERNET);
   size_ip = ip->ihl * 4;
-  tcp = (struct tcphdr *)(packet + 14 + size_ip);
+  tcp = (struct tcphdr *)(packet + SIZE_ETHERNET + size_ip);
   //#define TH_OFF(th)      (((th)->th_offx2 & 0xf0) >> 4)
-  size_tcp = tcp->doff * 4;
-  printf("size_tcp: %c", size_tcp);
 
-  if (size_tcp < 20) {
-    perror("TCP: Control packet length is incorrect");
-    exit(1);
-  }
   // dont print if rst packet
   if (!tcp->rst) {
     printf("Source port: %d\n", ntohs(tcp->th_sport));
@@ -174,8 +195,6 @@ void parse_tcp(struct packet_info *packet_info,
 
 void parse_payload(struct packet_info *packet_info, const u_char *payload,
                    int len) {
-  struct iphdr *ip;
-  struct tcphdr *tcp;
   printf("Payload: \n");
   printf("%s", payload);
   printf("%08X", payload); // print payload in HEX
@@ -202,5 +221,5 @@ void create_filter(char *FILTER){
         strcat(FILTER, target);
         strcat(FILTER," and icmp");
     }
-    printf("FILTER: %s\n",FILTER);
+    printf("Filter: %s\n",FILTER);
 }
