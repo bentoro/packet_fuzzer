@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 		buffer[len] = '\0';
 		printf("DATA: '%s' from client %s\n", buffer, inet_ntoa(client_address.sin_addr));
 
-		sendto(sock, buffer, len, 0, (struct sockaddr *)&client_address, sizeof(client_address));
+		//sendto(sock, buffer, len, 0, (struct sockaddr *)&client_address, sizeof(client_address));
 	}
 
 	return 0;

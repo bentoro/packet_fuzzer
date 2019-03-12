@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
       normal = false;
       interface = search_interface("wlp2s0");
       src_port = 8045;
-      packet_info.protocol = ICMP;
+      packet_info.protocol = UDP;
       printf("protocol: UDP\n");
       printf("src_port: %i\n", src_port);
       dst_port = 8045;
@@ -128,6 +128,7 @@ int main(int argc, char **argv) {
       print_time();
       printf(" Allocated room for UDP packet\n");
       udp_packets = calloc(1, sizeof(struct udp_packet));
+      sending_socket = start_udp_server(src_port);
       if(normal){
           print_time();
           hints = set_hints(AF_UNSPEC,SOCK_DGRAM, 0);
@@ -248,7 +249,7 @@ replaypacket:
               print_time();
               printf(" TCP Payload filled \n");
               print_time();
-              printf(" Normal TCP Packet sent to %s - Payload: %s\n", target,tcp_packets[packet_info.size-casecount].payload);
+              printf(" TCP Packet sent to %s - Payload: %s\n", target,tcp_packets[packet_info.size-casecount].payload);
               if(normal){
                   print_time();
                   send_normal_tcp_packet(sending_socket, tcp_packets[packet_info.size-casecount].payload, strlen(tcp_packets[packet_info.size-casecount].payload));
@@ -268,7 +269,7 @@ replaypacket:
               print_time();
               printf(" UDP Payload filled \n");
               print_time();
-              printf(" Normal Packet sent to %s - Payload: %s\n", target,udp_packets[packet_info.size-casecount].payload);
+              printf(" UDP Packet sent to %s - Payload: %s\n", target,udp_packets[packet_info.size-casecount].payload);
 
               if(normal){
                   send_normal_udp_packet(sending_socket, udp_packets[packet_info.size-casecount].payload, strlen(udp_packets[packet_info.size-casecount].payload), servinfo.ai_addr, servinfo.ai_addrlen);
@@ -279,6 +280,10 @@ replaypacket:
               } else {
                   print_time();
                   send_raw_udp_packet(udp_packets[packet_info.size-casecount].iphdr, udp_packets[packet_info.size-casecount].udphdr, udp_packets[packet_info.size-casecount].payload);
+                  bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
+                  print_time();
+                  printf(" Received: %s \n", receieved_data);
+                  memset(receieved_data, '\0', sizeof(receieved_data));
               }
           }else if(packet_info.protocol == ICMP){
               strncpy(icmp_packets[packet_info.size-casecount].payload, payload, strlen(payload) -1);
