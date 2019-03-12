@@ -31,15 +31,12 @@ int main(int argc, char **argv) {
 
   packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
 
-    if((recv_socket = socket(AF_INET, SOCK_RAW, 6)) < 0) {
-        perror("receiving socket failed to open (root maybe required)");
-    }
-
-    bytes_recv = recv(recv_socket, data, sizeof(data), 0);
-    printf("data: %s\n", data);
-  //threewayhandshake = true;
+  threewayhandshake = true;
+  //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(6)), (ntohl(6)),NULL, FINACK);
   //sleep(1);
-  //packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
+  packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
+  /*send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(6)), (ntohl(6)),NULL, ACK);
+  send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(6)), (ntohl(6)), "PLEASE", PSHACK);*/
 /*
     if((recv_socket = socket(AF_INET, SOCK_RAW, 0)) < 0) {
         perror("receiving socket failed to open (root maybe required)");

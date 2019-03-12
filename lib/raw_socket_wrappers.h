@@ -58,7 +58,6 @@ struct udp_packet{
     char payload[BUFSIZ];
 } udp_packet;
 
-int seq;
 struct addrinfo hints;
 char *target, *src_ip, *dst_ip;
 struct ifreq ifr;

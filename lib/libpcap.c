@@ -139,9 +139,9 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
           printf("SynAck: true\n");
       }else if(tcp->psh && tcp->ack){
           printf("PshAck: true\n");
-          printf("Payload (%d bytes): %s\n", size_payload, payload);
           send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->ack_seq)),NULL, ACK);
           send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->ack_seq)), "PLEASE", PSHACK);
+          printf("Payload (%d bytes): %s\n", size_payload, payload);
           packet_info->flag = PSHACK;
       }else if(tcp->syn){
           printf("Syn: true\n");
