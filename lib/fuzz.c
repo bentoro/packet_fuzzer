@@ -2,10 +2,7 @@
 
 /*
 int main(int argc, char **argv){
-    struct Queue* queue = create_queue(10);
     enqueue(queue, "one");
-    enqueue(queue, "two");
-    enqueue(queue, "three");
     printf("Front: %s\n", front(queue));
     printf("Rear: %s\n", rear(queue));
     dequeue(queue);
@@ -13,11 +10,6 @@ int main(int argc, char **argv){
     dequeue(queue);
     dequeue(queue);
     dequeue(queue);
-    printf("%i\n", rand() %65535);
-    char data[BUFSIZ] = "asdfhellhellhello";
-    fuzz_payload(data, strlen(data));
-    printf("found: %d\n", search(data, "hello",strlen(data)));
-    printf("payload: %s\n",data);
 
 }*/
 
@@ -52,16 +44,12 @@ int set_fuzz_ratio(double ratio){
     return ratio;
 }
 
-int generate_rand(double value) {
-    srand(time(NULL));
-  return (int)(rand() / value);
-}
-
-void fuzz_payload(char *data, int length){
+char *fuzz_payload(char *data, int length){
     int bytes_to_fuzz = length * fuzz_ratio;
     for(int i = 0; i<= bytes_to_fuzz; i++){
         data[rand() % length] = rand() % 256;
     }
+    return data;
 }
 
 void print_queue(struct Queue* queue){
@@ -74,49 +62,61 @@ struct Queue* create_queue(unsigned capacity){
     queue->front = 0;
     queue->size = 0;
     queue->rear = capacity - 1;
-    queue->array = (struct Data*)malloc((queue->capacity) * sizeof(struct Data));
-
+    if(packet_info.protocol == TCP){
+        queue->tcp_packets = (struct tcp_packet*)malloc((queue->capacity) * sizeof(struct tcp_packet));
+    } /*else if(packet_info.protocol == UDP){
+        queue->udp_packets = (struct udp_packet*)malloc((queue->capacity) * sizeof(struct udp_packet));
+    } else if(packet_info.protocol == ICMP){
+        queue->icmp_packets = (struct icmp_packet*)malloc((queue->capacity) * sizeof(struct icmp_packet));
+    }*/
     return queue;
 }
 
-void enqueue(struct Queue* queue, char* item){
+
+
+void enqueue(struct Queue* queue, struct tcp_packet tcp){
     if(is_full(queue)){
         return;
     }
     queue->rear = (queue->rear + 1)%queue->capacity;
-    queue->array[queue->rear].data = malloc(sizeof(struct Data));
-    strcpy(queue->array[queue->rear].data, item);
+    printf("REAR: %i\n",queue->rear);
+    if(packet_info.protocol == TCP){
+        queue->tcp_packets[queue->rear] = tcp;
+    } /*else if(packet_info.protocol == UDP){
+        queue->udp_packets[queue->rear] = tcp;
+    }else if(packet_info.protocol == ICMP){
+        queue->tcp_packets[queue->rear] = tcp;
+    }*/
     queue->size = queue->size +1;
-    printf("%s added to queue\n",item);
+    printf("added to queue\n");
+    print_tcp_packet(tcp);
 }
-char* dequeue(struct Queue* queue){
-    if(is_empty(queue)){
-        printf("Queue is empty\n");
-        return NULL;
-    }
-    char* item = queue->array[queue->front].data;
-    queue->front = (queue->front +1)%queue->capacity;
-    queue->size = queue->size - 1;
-    printf("%s removed from the queue\n",item);
-    return item;
+struct tcp_packet dequeue(struct Queue* queue){
+        printf("REAR: %i\n",queue->rear);
+        printf("FRONT: %i\n",queue->front);
+        struct tcp_packet tcp = queue->tcp_packets[queue->front];
+        queue->front = (queue->front +1)%queue->capacity;
+        queue->size = queue->size - 1;
+        return tcp;
 }
+
 int is_full(struct Queue* queue){
     return(queue->size == (int)queue->capacity);
 }
 int is_empty(struct Queue* queue){
     return(queue->size == 0);
 }
-
-char* front(struct Queue* queue){
+/*
+struct tcp_packet front(struct Queue* queue){
     if(is_empty(queue)){
         printf("Queue is empty\n");
     }
-    return queue->array[queue->front].data;
+    return queue->tcp_packets[queue->front];
 }
-char* rear(struct Queue* queue){
+struct tcp_packet rear(struct Queue* queue){
     if(is_empty(queue)){
         printf("Queue is empty\n");
     }
-    return queue->array[queue->rear].data;
-}
+    return queue->tcp_packets[queue->rear];
+}*/
 

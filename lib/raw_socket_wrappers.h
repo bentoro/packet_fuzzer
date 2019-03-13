@@ -60,9 +60,6 @@ struct packet_info {
   int ack;
   int seq;
   int size; // amount of test cases
-  /*struct tcp_packet *tcp_packet;
-  struct udp_packet *udp_packet;
-  struct icmp_packet *icmp_packet;*/
   bool threewayhandshake;
   bool endconnection;
 };
@@ -97,9 +94,12 @@ struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int fl
 struct udphdr build_udp_header(int payloadlen);
 struct icmp build_icmp_header(int type, int code, int id, int seq);
 void print_raw_ip_packet(struct ip ip);
-void print_raw_tcp_packet(struct tcphdr tcphdr);
-void print_raw_udp_packet();
-void print_raw_icmp_packet();
+void print_raw_tcp_packet(struct tcphdr tcp);
+void print_raw_udp_packet(struct udphdr udp);
+void print_raw_icmp_packet(struct icmp icmp);
+void print_tcp_packet(struct tcp_packet tcp);
+void print_udp_packet(struct udp_packet udp);
+void print_icmp_packet(struct icmp_packet icmp);
 void three_way_handshake(int window_size);
 
 #endif

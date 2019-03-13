@@ -868,6 +868,27 @@ void print_raw_icmp_packet(struct icmp icmp){
 
 }
 
+void print_tcp_packet(struct tcp_packet tcp){
+    print_raw_ip_packet(tcp.iphdr);
+    print_raw_tcp_packet(tcp.tcphdr);
+    printf("Payload: %s\n",tcp.payload);
+}
+
+
+void print_udp_packet(struct udp_packet udp){
+    print_raw_ip_packet(udp.iphdr);
+    print_raw_udp_packet(udp.udphdr);
+    printf("Payload: %s\n",udp.payload);
+}
+
+
+void print_icmp_packet(struct icmp_packet icmp){
+    print_raw_ip_packet(icmp.iphdr);
+    print_raw_icmp_packet(icmp.icmphdr);
+    printf("Payload: %s\n",icmp.payload);
+}
+
+
 int generate_rand(double value) {
     srand(time(NULL));
   return (int)(rand() / value);
