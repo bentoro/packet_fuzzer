@@ -21,7 +21,7 @@ int main(int argc, char **argv){
 void display(void *packet){
   struct iphdr *ip;
   struct icmp *icmp;
-  const u_char *payload;
+  const char *payload;
   int size_ip;
   int size_icmp;
   int size_payload;
@@ -30,8 +30,9 @@ void display(void *packet){
   icmp = (struct icmp *)(packet + size_ip);
   size_icmp = ICMP_HDRLEN;
   printf(" %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
-  payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_icmp);
+  payload = (char *)(packet + size_ip + size_icmp);
   size_payload = ntohs(ip->tot_len) - (size_ip + size_icmp);
+  printf("Sizeof payload: %i\n",size_payload);
   printf("payload: %s\n", payload);
 }
 /*void display(void *buf, int bytes)

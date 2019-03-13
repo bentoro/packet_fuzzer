@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
   rewind(config_file);
 
 
-  total_testcases = 50;
+  total_testcases = 6;
   // allocate space for the test cases
   if(packet_info.protocol == TCP){
       print_time();
