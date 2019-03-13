@@ -30,15 +30,12 @@ int main(int argc, char **argv) {
   threewayhandshake = false;
 
   packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
-
   threewayhandshake = true;
   //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(6)), (ntohl(6)),NULL, FINACK);
   //sleep(1);
-  packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
-  /*send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(6)), (ntohl(6)),NULL, ACK);
-  send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(6)), (ntohl(6)), "PLEASE", PSHACK);*/
-/*
-    if((recv_socket = socket(AF_INET, SOCK_RAW, 0)) < 0) {
+  send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(packet_info.seq)), (ntohl(packet_info.ack)), "HELLO", PSHACK);
+  send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(packet_info.seq)), (ntohl(packet_info.ack)+5), NULL, ACK);
+    /*if((recv_socket = socket(AF_INET, SOCK_RAW, 0)) < 0) {
         perror("receiving socket failed to open (root maybe required)");
     }
 
