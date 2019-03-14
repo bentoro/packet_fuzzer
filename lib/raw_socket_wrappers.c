@@ -579,75 +579,6 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
   printf(" TCP Packet sent\n");
   close(sending_socket);
 }
-  // Free allocated memory.
-  //free(ip_flags);
-  //free(tcp_flags);
-
-/*void send_raw_tcp_packet(int seq, int ack,char *data, int flags) {
-  int sending_socket, payloadlen = 0;
-  const int on = 1;
-  struct ip ip;
-  struct tcphdr tcp;
-  struct sockaddr_in sin;
-  struct tcp_packet packet;
-
-  //Build IP Header
-  ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + TCP_HDRLEN),0, 0,0,0,0,255, TCP);
-  packet.iphdr = ip;
-
-  //Build TCP Header
-  tcp = build_tcp_header(seq,ack,0, (TCP_HDRLEN/4), flags,64240,0);
-  packet.tcphdr = tcp;
-
-  //Check if there is a payload
-  if (data != NULL) {
-    sprintf (packet.payload, "%s", data);
-    payloadlen = strlen(packet.payload);
-  }
-  // payloadlen = strlen(packet.payload);
-  packet.tcphdr.th_sum = tcp4_checksum(packet.iphdr, packet.tcphdr,(uint8_t *)packet.payload, payloadlen);
-
-  printf("Payload: %s\n", packet.payload);
-
-  //Let the Kernel know where to send the raw datagram
-  //Fill the in_addr with the desired destination IP and pass the struct to sendto()
-  memset(&sin, 0, sizeof(struct sockaddr_in));
-  sin.sin_family = AF_INET;
-  sin.sin_addr.s_addr = packet.iphdr.ip_dst.s_addr;
-
-  // Submit request for a raw socket descriptor.
-  if ((sending_socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW)) < 0) {
-    perror("socket() failed ");
-    exit(EXIT_FAILURE);
-  }
-  printf("Size of packet: %lu\n", sizeof(packet));
-  // Set flag so socket expects us to provide IPv4 header.
-  if (setsockopt(sending_socket, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
-    perror("setsockopt() failed to set IP_HDRINCL ");
-    exit(EXIT_FAILURE);
-  }
-
-  // Bind socket to interface index.
-  if (setsockopt(sending_socket, SOL_SOCKET, SO_BINDTODEVICE, &interface,sizeof(interface)) < 0) {
-    perror("setsockopt() failed to bind to interface ");
-    exit(EXIT_FAILURE);
-  }
-
-  // Send packet.
-  // if (sendto(sending_socket, &packet, IP4_HDRLEN + TCP_HDRLEN, 0, (struct
-  // sockaddr *)&sin, sizeof(struct sockaddr)) < 0) {
-  if (sendto(sending_socket, &packet, IP4_HDRLEN + TCP_HDRLEN + payloadlen, 0,
-             (struct sockaddr *)&sin, sizeof(sin)) < 0) {
-    perror("sendto() failed ");
-    exit(EXIT_FAILURE);
-  }
-  printf("Packet sent\n");
-  close(sending_socket);
-}
-  // Free allocated memory.
-  //free(ip_flags);
-  //free(tcp_flags);
-  */
 
 struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl, int flag) {
   int status;
@@ -902,4 +833,40 @@ void three_way_handshake(int window_size){
     send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,TCP),build_tcp_header(0,0,0,5,SYN,window_size,0), NULL);
     packet_info = packet_capture(filter, packet_info);
     packet_info.threewayhandshake = false;
+}
+
+int start_icmp_client(){
+    int sending_socket;
+
+	if((sending_socket = socket(PF_INET, SOCK_RAW, IPPROTO_ICMP))<0){
+		perror("socket");
+		exit(0);
+	}
+	return sending_socket;
+}
+
+char *recv_icmp_packet(void *packet){
+  struct iphdr *ip;
+  struct icmp *icmp;
+  const char *payload;
+  int size_ip;
+  int size_icmp;
+  int size_payload;
+  ip = (struct iphdr *)(packet);
+  size_ip = ip->ihl * 4;
+  icmp = (struct icmp *)(packet + size_ip);
+  size_icmp = ICMP_HDRLEN;
+  if(ip->saddr == inet_addr(dst_ip) && ip->daddr == inet_addr(src_ip)){
+      printf("%02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+      printf(" %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
+      payload = (char *)(packet + size_ip + size_icmp);
+      size_payload = ntohs(ip->tot_len) - (size_ip + size_icmp);
+      printf("Sizeof payload: %i\n",size_payload);
+      printf("payload: %s\n", payload);
+      return (char *)payload;
+  } else {
+    //wrong source and destination ip
+    replay = true;
+    return NULL;
+  }
 }

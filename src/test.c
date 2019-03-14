@@ -29,6 +29,10 @@ void display(void *packet){
   size_ip = ip->ihl * 4;
   icmp = (struct icmp *)(packet + size_ip);
   size_icmp = ICMP_HDRLEN;
+  printf("src: %u\n", ip->saddr);
+  printf("dst: %u\n", ip->daddr);
+  printf("src: %u\n", htonl(ip->saddr));
+  printf("dst: %u\n", htonl(ip->daddr));
   printf(" %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
   payload = (char *)(packet + size_ip + size_icmp);
   size_payload = ntohs(ip->tot_len) - (size_ip + size_icmp);

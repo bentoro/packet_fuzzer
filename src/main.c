@@ -1,7 +1,6 @@
 #include "main.h"
 
 int main(int argc, char **argv) {
-    //struct Queue* queue = create_queue(10);
   target = (char *)calloc(40, sizeof(char));
   src_ip = (char *)calloc(INET_ADDRSTRLEN, sizeof(char));
   dst_ip = (char *)calloc(INET_ADDRSTRLEN, sizeof(char));
@@ -84,12 +83,14 @@ int main(int argc, char **argv) {
       strcpy(target, "192.168.1.81");
       printf("dst_ip: %s\n",target);
       break;
-    default:  /*? */
+    default:  /*?*/
       print_usage();
       exit(1);
     }
   }
+
   set_fuzz_ratio(0.75);
+
   if(raw){
       print_time();
       create_filter(filter);
@@ -127,7 +128,6 @@ int main(int argc, char **argv) {
   }
   rewind(config_file);
 
-
   total_testcases = 6;
   // allocate space for the test cases
   if(packet_info.protocol == TCP){
@@ -154,9 +154,12 @@ int main(int argc, char **argv) {
   }else if(packet_info.protocol == ICMP){
       print_time();
       printf(" Allocated room for ICMP packet\n");
+      sending_socket = start_icmp_client();
+	  client_addr_len = sizeof(icmpclient);
       //Allocate atleast half of the total test cases
       icmp_packets = calloc((total_testcases)/2, sizeof(struct icmp_packet));
       packet = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
+      sending_socket = start_icmp_client();
   }
 
   while (fgets(buffer, sizeof(buffer), config_file) != NULL) {
@@ -295,6 +298,7 @@ replaypacket:
               } else {
                   print_time();
                   send_raw_udp_packet(udp_packets[0].iphdr, udp_packets[0].udphdr, udp_packets[0].payload);
+                  memset(receieved_data,'\0', sizeof(receieved_data));
                   bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
                   print_time();
                   printf(" Received: %s \n", receieved_data);
@@ -315,12 +319,19 @@ replaypacket:
               printf(" Payload: %s\n", icmp_packets[0].payload);
               print_time();
               send_raw_icmp_packet(icmp_packets[0].iphdr, icmp_packets[0].icmphdr, icmp_packets[0].payload);
-              packet_info = packet_capture(filter, packet_info);
+              memset(receieved_data,'\0', sizeof(receieved_data));
+              if(recvfrom(sending_socket, receieved_data, sizeof(receieved_data), 0, (struct sockaddr*)&icmpclient, &client_addr_len) < 0){
+                    perror("recvfrom");
+              } else {
+                    strcpy(receieved_data,recv_icmp_packet(receieved_data));
+              }
+              print_time();
+              printf(" Received: %s \n", receieved_data);
               if(replay == true){
                 replay = false;
                 goto replaypacket;
               } else {
-                  if(search(icmp_payload, result, sizeof(result))){
+                  if(search(receieved_data, result, sizeof(result))){
                       printf("Found matching string\n");
                       icmp_packets[end] = icmp_packets[0];
                       print_time();
@@ -421,10 +432,25 @@ replaypacket1:
               printf(" Payload: %s\n", icmp_packets[current].payload);
               print_time();
               send_raw_icmp_packet(icmp_packets[current].iphdr, icmp_packets[current].icmphdr, icmp_packets[current].payload);
-              packet_info = packet_capture(filter, packet_info);
+              memset(receieved_data,'\0', sizeof(receieved_data));
+              if(recvfrom(sending_socket, receieved_data, sizeof(receieved_data), 0, (struct sockaddr*)&icmpclient, &client_addr_len) < 0){
+                    perror("recvfrom");
+              } else {
+                    strcpy(receieved_data,recv_icmp_packet(receieved_data));
+              }
+              print_time();
+              printf(" Received: %s \n", receieved_data);
               if(replay == true){
                 replay = false;
                 goto replaypacket1;
+              } else {
+                  if(search(receieved_data, result, sizeof(result))){
+                      printf("Found matching string\n");
+                      icmp_packets[end] = icmp_packets[0];
+                      print_time();
+                      print_icmp_packet(icmp_packets[end]);
+                      end++;
+                  }
               }
           }
         current++;

@@ -11,7 +11,6 @@
 #include <pcap.h>
 
 #define SIZE_ETHERNET 14
-char icmp_payload[IP_MAXPACKET];
 pcap_t *interfaceinfo;
 
 struct packet_info packet_capture(char *FILTER, struct packet_info packet_info);

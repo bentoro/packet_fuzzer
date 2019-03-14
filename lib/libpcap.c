@@ -147,7 +147,6 @@ void parse_icmp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr
   payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_icmp);
   size_payload = ntohs(ip->tot_len) - (size_ip + size_icmp);
   print_time();
-  strcpy(icmp_payload, (char *)payload);
   printf(" %s\n", payload);
   pcap_breakloop(interfaceinfo);
 }

@@ -100,6 +100,8 @@ void print_raw_icmp_packet(struct icmp icmp);
 void print_tcp_packet(struct tcp_packet tcp);
 void print_udp_packet(struct udp_packet udp);
 void print_icmp_packet(struct icmp_packet icmp);
+int start_icmp_client();
+char *recv_icmp_packet(void *packet);
 void three_way_handshake(int window_size);
 
 #endif

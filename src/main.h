@@ -25,6 +25,7 @@ static void print_usage(void) {
 }
 struct addrinfo servinfo;
 struct sockaddr client; //for sending normal udp packets
+struct sockaddr_in icmpclient; //for receiving icmp packets
 socklen_t client_addr_len; //for sending normal udp packets
 int opt, line = 1, line_count = 0, casecount, sending_socket,bytes_receieved, total_testcases = 0, end = 1, current = 1;
 FILE *config_file;
