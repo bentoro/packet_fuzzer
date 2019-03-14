@@ -133,7 +133,9 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
           printf("SynAck: true\n");
       }else if(tcp->psh && tcp->ack){
           printf("PshAck: true\n");
-          send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq)+5),NULL, ACK);
+              packet_info->ack = tcp->ack_seq;
+              packet_info->seq = tcp->th_seq;
+            send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq)+5),NULL, ACK);
           packet_info->flag = PSHACK;
       }else if(tcp->syn){
           printf("Syn: true\n");
@@ -146,7 +148,9 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
           packet_info->flag = RST;
       }else if (tcp->ack){
           packet_info->flag = ACK;
-          send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq)+5),NULL, ACK);
+          if(threewayhandshake){
+              send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq)+5),NULL, ACK);
+          }
           printf("Ack: true\n");
       }
   }

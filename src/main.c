@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../lib/libpcap.h"
 #include "../lib/raw_socket_wrappers.h"
+#include "limits.h"
 
 int main(int argc, char **argv) {
 
@@ -25,7 +26,7 @@ int main(int argc, char **argv) {
   hints = set_hints(AF_INET, SOCK_STREAM, hints.ai_flags | AI_CANONNAME);
   // Resolve target using getaddrinfo().
   dst_ip = resolve_host(target, hints);
-  send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 0, 0, NULL, SYN);
+  send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, generate_rand(UINT_MAX), 0, NULL, SYN);
   //receive with raw sockets
   //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 0, 0, NULL, SYN);
   //TODO: Make the filter more specific
