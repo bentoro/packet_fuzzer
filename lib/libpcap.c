@@ -99,15 +99,9 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
   packet_info->protocol = TCP;
 
   ip = (struct iphdr *)(packet + 14);
-  // size_ip = IP_HL(ip)*4;
-  // tcp = (struct sniff_tcp*)(packet + 14 + size_ip);
-  // size_tcp = TH_OFF(tcp)*4;
-  // header length is IHL * 4
   size_ip = ip->ihl * 4;
   tcp = (struct tcphdr *)(packet + 14 + size_ip);
-  //#define TH_OFF(th)      (((th)->th_offx2 & 0xf0) >> 4)
   size_tcp = tcp->doff * 4;
-  printf("size_tcp: %c", size_tcp);
 
   if (size_tcp < 20) {
     perror("TCP: Control packet length is incorrect");
@@ -116,7 +110,6 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
 
   payload = (u_char *)(packet + 14 + size_ip + size_tcp);
   size_payload = ntohs(ip->tot_len) - (size_ip + size_tcp);
-  //dont print if rst packet
   if(!tcp->rst){
       printf("Source port: %d\n", ntohs(tcp->th_sport));
       printf("Destination port: %d\n", ntohs(tcp->th_dport));
@@ -136,14 +129,11 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
               send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
               threewayhandshake = true;
           }
-          // Interface to send packet through.
           packet_info->flag = SYNACK;
           printf("SynAck: true\n");
       }else if(tcp->psh && tcp->ack){
           printf("PshAck: true\n");
-          send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->th_seq)+5), (ntohl(tcp->ack_seq)),NULL, ACK);
-          //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->ack_seq)), "PLEASE", PSHACK);
-          printf("Payload (%d bytes): %s\n", size_payload, payload);
+          send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->th_seq)), (ntohl(tcp->ack_seq)),NULL, ACK);
           packet_info->flag = PSHACK;
       }else if(tcp->syn){
           printf("Syn: true\n");
@@ -156,6 +146,7 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
           packet_info->flag = RST;
       }else if (tcp->ack){
           packet_info->flag = ACK;
+          send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->th_seq)), (ntohl(tcp->ack_seq)),NULL, ACK);
           printf("Ack: true\n");
       }
   }
@@ -165,7 +156,7 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
     printf("Payload (%d bytes):\n", size_payload);
     //parse_payload(packet_info,payload, size_payload);
   }*/
-  //pcap_breakloop(interfaceinfo);
+  pcap_breakloop(interfaceinfo);
 }
 
 void parse_payload(struct packet_info *packet_info, const u_char *payload, int len) {

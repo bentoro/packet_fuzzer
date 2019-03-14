@@ -27,17 +27,19 @@ int main(int argc, char **argv) {
   dst_ip = resolve_host(target, hints);
   send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 0, 0, NULL, SYN);
   //receive with raw sockets
-  send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 0, 0, NULL, SYN);
+  //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 0, 0, NULL, SYN);
   //TODO: Make the filter more specific
   threewayhandshake = false;
   packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
-  int sock,packet_size;
+  packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
+  /*int sock,packet_size;
   unsigned char *buffer = (unsigned char *)malloc(65536);
   struct sockaddr_in source_socket_address, dest_socket_address;
   if(sock = socket (PF_INET, SOCK_RAW, IPPROTO_TCP) == -1){
         perror("Failed to create socket");
         exit(1);
     }
+  while(1){
   // recvfrom is used to read data from a socket
   packet_size = recvfrom(sock , buffer , 65536 , 0 , NULL, NULL);
   if (packet_size == -1) {
@@ -57,6 +59,7 @@ int main(int argc, char **argv) {
   printf("Source Address: %s\n", (char *)inet_ntoa(source_socket_address.sin_addr));
   printf("Destination Address: %s\n", (char *)inet_ntoa(dest_socket_address.sin_addr));
   printf("Identification: %d\n\n", ntohs(ip_packet->id));
+  }*/
   threewayhandshake = true;
   //packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
   //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(6)), (ntohl(6)),NULL, FINACK);
