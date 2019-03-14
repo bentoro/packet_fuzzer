@@ -133,7 +133,7 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
               packet_info->ack = tcp->ack_seq;
               packet_info->seq = tcp->th_seq;
               send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), NULL, ACK);
-              //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
+              send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, 1, (ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
               threewayhandshake = true;
           }
           // Interface to send packet through.
@@ -141,7 +141,7 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
           printf("SynAck: true\n");
       }else if(tcp->psh && tcp->ack){
           printf("PshAck: true\n");
-          //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->ack_seq)),NULL, ACK);
+          send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->th_seq)+5), (ntohl(tcp->ack_seq)),NULL, ACK);
           //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->ack_seq)), "PLEASE", PSHACK);
           printf("Payload (%d bytes): %s\n", size_payload, payload);
           packet_info->flag = PSHACK;
@@ -165,7 +165,7 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
     printf("Payload (%d bytes):\n", size_payload);
     //parse_payload(packet_info,payload, size_payload);
   }*/
-  pcap_breakloop(interfaceinfo);
+  //pcap_breakloop(interfaceinfo);
 }
 
 void parse_payload(struct packet_info *packet_info, const u_char *payload, int len) {
