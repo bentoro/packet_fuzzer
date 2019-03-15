@@ -33,6 +33,8 @@ int main(int argc, char **argv) {
   threewayhandshake = false;
   packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
   packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
+  send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, ((packet_info.seq)), ((packet_info.ack)), "PLEAS", PSHACK);
+  packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
   /*int sock,packet_size;
   unsigned char *buffer = (unsigned char *)malloc(65536);
   struct sockaddr_in source_socket_address, dest_socket_address;
