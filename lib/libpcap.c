@@ -111,18 +111,17 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
   payload = (u_char *)(packet + 14 + size_ip + size_tcp);
   size_payload = ntohs(ip->tot_len) - (size_ip + size_tcp);
   if(!tcp->rst){
-      printf("Source port: %d\n", ntohs(tcp->th_sport));
-      printf("Destination port: %d\n", ntohs(tcp->th_dport));
       printf("Sequence #: %u\n", ntohl(tcp->seq));
       packet_info->seq = ntohl(tcp->seq);
       printf("Acknowledgement: %u \n", ntohl(tcp->ack_seq));
       packet_info->ack = ntohl(tcp->ack_seq);
-      printf("Len: %d\n", ntohs(ip->tot_len));
       if(tcp->fin && tcp->ack){
           printf("FinAck: true\n");
           packet_info->flag = FINACK;
       }else if(tcp->syn && tcp->ack){
+          printf("SYNACK\n");
           if(!threewayhandshake){
+              printf("Len: %d\n", ntohs(ip->tot_len));
               packet_info->ack = tcp->ack_seq;
               packet_info->seq = tcp->th_seq;
               send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq) + 1), NULL, ACK);
@@ -130,9 +129,9 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
               threewayhandshake = true;
           }
           packet_info->flag = SYNACK;
-          printf("SynAck: true\n");
       }else if(tcp->psh && tcp->ack){
-          printf("PshAck: true\n");
+          printf("PSHACK\n");
+              printf("Len: %d\n", ntohs(ip->tot_len));
               packet_info->seq = ntohl(tcp->ack_seq);
               packet_info->ack = ntohl(tcp->th_seq) + 5;
             send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq)+5),NULL, ACK);
@@ -147,13 +146,14 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
           printf("Rst: true\n");
           packet_info->flag = RST;
       }else if (tcp->ack){
+          printf("ACK\n");
           packet_info->flag = ACK;
           if(threewayhandshake){
+              printf("Len: %d\n", ntohs(ip->tot_len));
               packet_info->seq = ntohl(tcp->ack_seq);
               packet_info->ack = ntohl(tcp->th_seq) + 5;
               send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq)+5),NULL, ACK);
           }
-          printf("Ack: true\n");
       }
   }
 

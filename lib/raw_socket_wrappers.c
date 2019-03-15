@@ -539,8 +539,6 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
   packet.iphdr.ip_off = htons((ip_flags[0] << 15) + (ip_flags[1] << 14) +(ip_flags[2] << 13) + ip_flags[3]);
   packet.iphdr.ip_ttl = 255; //TTL
   packet.iphdr.ip_p = IPPROTO_TCP; //Protocol
-  printf("src_ip: %s\n", src_ip);
-  printf("dst_ip: %s\n", dst_ip);
   // Source IPv4 address (32 bits)
   if ((status = inet_pton(AF_INET, src_ip, &(packet.iphdr.ip_src))) != 1) {
       perror("inet_pton, src_ip");
@@ -568,10 +566,8 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
   }
   //packet.tcphdr.th_seq = seq; //SEQ
   packet.tcphdr.th_seq = htonl(seq); //SEQ
-  printf("SEQ: %u \n", ntohl(packet.tcphdr.th_seq));
   //packet.tcphdr.th_ack = ack; //ACK - 0 for first packet
   packet.tcphdr.th_ack = htonl(ack); //ACK - 0 for first packet
-  printf("ACK: %u \n", ntohl(packet.tcphdr.th_ack));
   packet.tcphdr.th_x2 = 0; //Reserved
   packet.tcphdr.th_off = TCP_HDRLEN / 4; //Offset
 
@@ -653,7 +649,6 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
     perror("socket() failed ");
     exit(EXIT_FAILURE);
   }
-    printf("Size of packet: %lu\n", sizeof(packet));
   // Set flag so socket expects us to provide IPv4 header.
   if (setsockopt(sending_socket, IPPROTO_IP, IP_HDRINCL, &on, sizeof(on)) < 0) {
     perror("setsockopt() failed to set IP_HDRINCL ");
@@ -672,7 +667,7 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
     perror("sendto() failed ");
     exit(EXIT_FAILURE);
   }
-  printf("Packet sent\n");
+  printf("TCP Packet sent\n\n");
   close(sending_socket);
   // Free allocated memory.
   free(ip_flags);
