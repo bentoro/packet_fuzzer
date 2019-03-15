@@ -63,6 +63,7 @@ char *target, *src_ip, *dst_ip;
 struct ifreq ifr;
 struct packet_info packet_info;
 bool threewayhandshake;
+bool threewayhandshake_exit;
 
 uint16_t checksum(uint16_t *, int);
 uint16_t udp4_checksum (struct ip iphdr, struct udphdr udphdr, uint8_t *payload, int payloadlen);

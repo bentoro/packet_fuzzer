@@ -118,23 +118,29 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
       if(tcp->fin && tcp->ack){
           printf("FinAck: true\n");
           packet_info->flag = FINACK;
+          if(threewayhandshake_exit){
+              printf("Len: %d\n", ntohs(ip->tot_len));
+              packet_info->ack = ntohl(tcp->ack_seq);
+              packet_info->seq = ntohl(tcp->th_seq) + ((ntohs(ip->tot_len)-(TCP_HDRLEN+IP4_HDRLEN)));
+            send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq)+ 1),NULL, ACK);
+            threewayhandshake_exit = false;
+          }
       }else if(tcp->syn && tcp->ack){
           printf("SYNACK\n");
           if(!threewayhandshake){
               printf("Len: %d\n", ntohs(ip->tot_len));
-              packet_info->ack = tcp->ack_seq;
-              packet_info->seq = tcp->th_seq;
+              packet_info->seq = ntohl(tcp->ack_seq);
+              packet_info->ack = ntohl(tcp->th_seq) + 1;
               send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq) + 1), NULL, ACK);
-              send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
               threewayhandshake = true;
           }
           packet_info->flag = SYNACK;
       }else if(tcp->psh && tcp->ack){
           printf("PSHACK\n");
               printf("Len: %d\n", ntohs(ip->tot_len));
-              packet_info->seq = ntohl(tcp->ack_seq);
-              packet_info->ack = ntohl(tcp->th_seq) + 5;
-            send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq)+5),NULL, ACK);
+              packet_info->ack = ntohl(tcp->ack_seq);
+              packet_info->seq = ntohl(tcp->th_seq) + ((ntohs(ip->tot_len)-(TCP_HDRLEN+IP4_HDRLEN)));
+            send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq)+((ntohs(ip->tot_len)-(TCP_HDRLEN+IP4_HDRLEN)))),NULL, ACK);
           packet_info->flag = PSHACK;
       }else if(tcp->syn){
           printf("Syn: true\n");
@@ -148,12 +154,12 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
       }else if (tcp->ack){
           printf("ACK\n");
           packet_info->flag = ACK;
-          if(threewayhandshake){
+          /*if(threewayhandshake){
               printf("Len: %d\n", ntohs(ip->tot_len));
               packet_info->seq = ntohl(tcp->ack_seq);
               packet_info->ack = ntohl(tcp->th_seq) + 5;
               send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, (ntohl(tcp->ack_seq)), (ntohl(tcp->th_seq)+5),NULL, ACK);
-          }
+          }*/
       }
   }
 
@@ -162,7 +168,9 @@ void parse_tcp(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr
     printf("Payload (%d bytes):\n", size_payload);
     //parse_payload(packet_info,payload, size_payload);
   }*/
-  pcap_breakloop(interfaceinfo);
+  if(threewayhandshake_exit == false){
+      pcap_breakloop(interfaceinfo);
+  }
 }
 
 void parse_payload(struct packet_info *packet_info, const u_char *payload, int len) {

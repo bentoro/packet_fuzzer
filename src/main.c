@@ -7,6 +7,9 @@
 
 int main(int argc, char **argv) {
 
+ struct timespec tim, tim2;
+ tim.tv_sec  = 0;
+ tim.tv_nsec = 500000000L;
   if(geteuid() != 0) {
     printf("Must run as root\n");
     exit(1);
@@ -32,8 +35,16 @@ int main(int argc, char **argv) {
   //TODO: Make the filter more specific
   threewayhandshake = false;
   packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
+  send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, ((packet_info.seq)), ((packet_info.ack)), "HELLO", PSHACK);
+
+   if(nanosleep(&tim , &tim2) < 0){
+      return -1;
+   }
   packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
-  send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, ((packet_info.seq)), ((packet_info.ack)), "PLEAS", PSHACK);
+  //send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, ((packet_info.ack)), ((packet_info.seq)), "PLEASE", PSHACK);
+  //packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
+  send_raw_tcp_packet(100, 8045, ifr, src_ip,dst_ip, ((packet_info.seq)), ((packet_info.ack)), NULL, FINACK);
+  threewayhandshake_exit = true;
   packet_info = packet_capture("src 192.168.1.81 and dst 192.168.1.85 and tcp", packet_info);
   /*int sock,packet_size;
   unsigned char *buffer = (unsigned char *)malloc(65536);
