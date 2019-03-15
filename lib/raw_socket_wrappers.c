@@ -678,3 +678,39 @@ void send_raw_tcp_packet(int src_port, int dst_port, struct ifreq interface, cha
   free(ip_flags);
   free(tcp_flags);
 }
+
+
+int start_tcp_client(){
+    int sending_socket;
+
+	if((sending_socket = socket(PF_INET, SOCK_RAW, IPPROTO_TCP))<0){
+		perror("socket");
+		exit(0);
+	}
+	return sending_socket;
+}
+
+
+char *recv_tcp_packet(void *packet){
+  struct iphdr *ip;
+  struct tcphdr *tcp;
+  const char *payload;
+  int size_ip;
+  int size_tcp;
+  int size_payload;
+  ip = (struct iphdr *)(packet);
+  size_ip = ip->ihl * 4;
+  tcp = (struct tcphdr *)(packet + size_ip);
+  size_tcp = TCP_HDRLEN;
+  if(ntohs(tcp->th_sport) == 8045 && ntohs(tcp->th_dport) == 25600){
+      printf("src: %u\n", ip->saddr);
+      printf("dst: %u\n", ip->daddr);
+      printf("seq: %i\n", tcp->th_seq);
+      printf("ack: %i\n", tcp->ack_seq);
+      payload = (char *)(packet + size_ip + size_tcp);
+      size_payload = ntohs(ip->tot_len) - (size_ip + size_tcp);
+      printf("Sizeof payload: %i\n",size_payload);
+      printf("payload: %s\n", payload);
+  }
+  return NULL;
+}
