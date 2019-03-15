@@ -34,6 +34,7 @@ char result[BUFSIZ];
 char receieved_data[IP_MAXPACKET];
 char filter[BUFSIZ];
 char buffer[BUFSIZ];
+char packet_buffer[IP_MAXPACKET];
 bool raw = false, tcp = false, udp = false, icmp = false, normal = true, feedback = false, custom = true, complete = false;
 char string_port[BUFSIZ];
 

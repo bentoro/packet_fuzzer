@@ -177,7 +177,7 @@ void parse_tcp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr,
       printf("FinAck: true\n");
       packet_info->flag = FINACK;
     } else if (tcp->syn && tcp->ack) {
-      if (packet_info->threewayhandshake) {
+      if (threewayhandshake) {
         send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,TCP),build_tcp_header(0,0,0,5,ACK,64240,0), NULL);
         //send_raw_tcp_packet(1,(ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
       } else {

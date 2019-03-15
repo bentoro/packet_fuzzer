@@ -18,6 +18,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <limits.h>
 #include "libpcap.h"
 
 #define IP4_HDRLEN 20 // Length of IPv4 Header
@@ -60,8 +61,6 @@ struct packet_info {
   int ack;
   int seq;
   int size; // amount of test cases
-  bool threewayhandshake;
-  bool endconnection;
 };
 
 
@@ -74,8 +73,7 @@ struct addrinfo hints;
 char *target, *src_ip, *dst_ip;
 struct ifreq interface;
 struct packet_info packet_info;
-bool replay;
-bool threewayhandshake;
+bool replay,recv_data,threewayhandshake, endconnection;
 
 uint16_t checksum(uint16_t *, int);
 uint16_t udp4_checksum(struct ip iphdr, struct udphdr udphdr, uint8_t *payload,int payloadlen);
@@ -102,6 +100,9 @@ void print_udp_packet(struct udp_packet udp);
 void print_icmp_packet(struct icmp_packet icmp);
 int start_icmp_client();
 char *recv_icmp_packet(void *packet);
-void three_way_handshake(int window_size);
+void three_way_handshake(int sending_socket);
+int start_tcp_raw_client();
+char *recv_tcp_packet(void *packet);
+void end_tcp_connection(int sending_socket);
 
 #endif

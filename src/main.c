@@ -1,6 +1,9 @@
 #include "main.h"
 
 int main(int argc, char **argv) {
+  struct timespec tim, tim2;
+  tim.tv_sec  = 0;
+  tim.tv_nsec = 500000000L;
   target = (char *)calloc(40, sizeof(char));
   src_ip = (char *)calloc(INET_ADDRSTRLEN, sizeof(char));
   dst_ip = (char *)calloc(INET_ADDRSTRLEN, sizeof(char));
@@ -127,8 +130,53 @@ int main(int argc, char **argv) {
           }
   }
   rewind(config_file);
-
   total_testcases = 6;
+  sending_socket = start_tcp_raw_client();
+  three_way_handshake(sending_socket);
+  //first packet seq = seq and ack = ack
+  //consecutive packets seq = ack and ack = seq
+  send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header(((packet_info.seq)),((packet_info.ack)),0,5,PSHACK,64240,0), "HELLO");
+  recv_data = false;
+  while(recv_data == false){
+      if(recvfrom(sending_socket, packet_buffer, sizeof(packet_buffer), 0, (struct sockaddr*)&icmpclient, &client_addr_len) < 0){
+          perror("recvfrom");
+        } else{
+            strcpy(receieved_data,recv_tcp_packet(packet_buffer));
+        }
+  }
+  printf("payload: %s\n", receieved_data);
+  send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header(((packet_info.ack)),((packet_info.seq)),0,5,PSHACK,64240,0), "PLEASE");
+  recv_data = false;
+  while(recv_data == false){
+      if(recvfrom(sending_socket, packet_buffer, sizeof(packet_buffer), 0, (struct sockaddr*)&icmpclient, &client_addr_len) < 0){
+          perror("recvfrom");
+        } else{
+            strcpy(receieved_data,recv_tcp_packet(packet_buffer));
+        }
+  }
+  printf("payload: %s\n", receieved_data);
+  send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header(((packet_info.ack)),((packet_info.seq)),0,5,PSHACK,64240,0), "YAAAAAASS");
+  recv_data = false;
+  while(recv_data == false){
+      if(recvfrom(sending_socket, packet_buffer, sizeof(packet_buffer), 0, (struct sockaddr*)&icmpclient, &client_addr_len) < 0){
+          perror("recvfrom");
+        } else{
+            strcpy(receieved_data,recv_tcp_packet(packet_buffer));
+        }
+  }
+  printf("payload: %s\n", receieved_data);
+  end_tcp_connection(sending_socket);
+
+  /*send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header(((packet_info.seq)),((packet_info.ack)),0,5,PSHACK,64240,0), "PLEASE WORK");
+  while(recv_data == false){
+      if(recvfrom(sending_socket, packet_buffer, sizeof(packet_buffer), 0, (struct sockaddr*)&icmpclient, &client_addr_len) < 0){
+          perror("recvfrom");
+        } else{
+            strcpy(receieved_data,recv_tcp_packet(packet_buffer));
+        }
+  }
+  printf("payload: %s\n", receieved_data);*/
+  /*
   // allocate space for the test cases
   if(packet_info.protocol == TCP){
       print_time();
@@ -462,6 +510,6 @@ replaypacket1:
   //fclose(config_file);
   free(target);
   free(src_ip);
-  free(dst_ip);
+  free(dst_ip);*/
   return (0);
 }

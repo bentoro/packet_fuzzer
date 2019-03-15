@@ -653,7 +653,7 @@ struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int fl
   if (src_port == 1337) {
     tcphdr.th_sport = generate_rand(65535);
   } else {
-    tcphdr.th_sport = src_port;
+    tcphdr.th_sport = htons(src_port);
   }
 
   if (dst_port == 1337) {
@@ -662,7 +662,7 @@ struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int fl
     tcphdr.th_dport = htons(dst_port);
   }
   if(seq == 1337){
-    tcphdr.th_seq = htonl(generate_rand(65535)); // SEQ
+    tcphdr.th_seq = htonl(generate_rand(UINT_MAX)); // SEQ
   } else {
     tcphdr.th_seq = htonl(seq); // SEQ
   }
@@ -825,14 +825,35 @@ int generate_rand(double value) {
   return (int)(rand() / value);
 }
 
-void three_way_handshake(int window_size){
-    char filter[BUFSIZ];
+void three_way_handshake(int sending_socket){
+    struct sockaddr_in tcpclient; //for receiving icmp packets
+    socklen_t len; //for sending normal udp packets
+    len = sizeof(tcpclient);
+    char buf[IP_MAXPACKET];
+    //send SYN packet
+    send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header(1337,0,0,5,SYN,64249,0), NULL);
+    threewayhandshake = false;
+    if(recvfrom(sending_socket, buf, sizeof(buf), 0, (struct sockaddr*)&tcpclient, &len) < 0){
+      perror("recvfrom");
+    } else{
+        recv_tcp_packet(buf);
+    }
+}
 
-    create_filter(filter);
-    packet_info.threewayhandshake = true;
-    send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,TCP),build_tcp_header(0,0,0,5,SYN,window_size,0), NULL);
-    packet_info = packet_capture(filter, packet_info);
-    packet_info.threewayhandshake = false;
+void end_tcp_connection(int sending_socket){
+    struct sockaddr_in tcpclient; //for receiving icmp packets
+    socklen_t len; //for sending normal udp packets
+    len = sizeof(tcpclient);
+    char buf[IP_MAXPACKET];
+    send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((packet_info.ack),(packet_info.seq),0,5,FINACK,64249,0), NULL);
+    endconnection = true;
+    if(endconnection){
+        if(recvfrom(sending_socket, buf, sizeof(buf), 0, (struct sockaddr*)&tcpclient, &len) < 0){
+          perror("recvfrom");
+        } else{
+            recv_tcp_packet(buf);
+        }
+    }
 }
 
 int start_icmp_client(){
@@ -844,6 +865,17 @@ int start_icmp_client(){
 	}
 	return sending_socket;
 }
+
+int start_tcp_raw_client(){
+    int sending_socket;
+
+	if((sending_socket = socket(PF_INET, SOCK_RAW, IPPROTO_TCP))<0){
+		perror("socket");
+		exit(0);
+	}
+	return sending_socket;
+}
+
 
 char *recv_icmp_packet(void *packet){
   struct iphdr *ip;
@@ -869,4 +901,67 @@ char *recv_icmp_packet(void *packet){
     replay = true;
     return NULL;
   }
+}
+
+
+char *recv_tcp_packet(void *packet){
+  struct iphdr *ip;
+  struct tcphdr *tcp;
+  const char *payload;
+  int size_ip;
+  int size_tcp;
+  int size_payload;
+  ip = (struct iphdr *)(packet);
+  size_ip = ip->ihl * 4;
+  tcp = (struct tcphdr *)(packet + size_ip);
+  size_tcp = TCP_HDRLEN;
+  payload = (char *)(packet + size_ip + size_tcp);
+  if(ntohs(tcp->th_sport) == dst_port && ntohs(tcp->th_dport) == src_port){
+      if(!tcp->rst){
+          if(tcp->fin && tcp->ack){
+              printf("FINACK\n");
+              if(endconnection){
+                  printf("Len: %d\n", ntohs(ip->tot_len));
+                  printf("Sequence #: %u\n", ntohl(tcp->seq));
+                  printf("Acknowledgement: %u \n", ntohl(tcp->ack_seq));
+                  send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((ntohl(tcp->ack_seq)),(ntohl(tcp->th_seq)+1),0,5,ACK,64240,0), NULL);
+                  endconnection = false;
+              }
+          }else if(tcp->syn && tcp->ack){
+              printf("SYNACK\n");
+              if(!threewayhandshake){
+                  printf("Len: %d\n", ntohs(ip->tot_len));
+                  printf("Sequence #: %u\n", ntohl(tcp->seq));
+                  printf("Acknowledgement: %u \n", ntohl(tcp->ack_seq));
+                  packet_info.seq = ntohl(tcp->ack_seq);
+                  packet_info.ack = ntohl(tcp->th_seq) + 1;
+                  send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((ntohl(tcp->ack_seq)),(ntohl(tcp->th_seq)+1),0,5,ACK,64240,0), NULL);
+                  threewayhandshake = true;
+              }
+          }else if(tcp->psh && tcp->ack){
+              printf("PSHACK\n");
+              //if(!recv_data){
+                  printf("Len: %d\n", ntohs(ip->tot_len));
+                  printf("Sequence #: %u\n", ntohl(tcp->seq));
+                  printf("Acknowledgement: %u \n", ntohl(tcp->ack_seq));
+                  packet_info.seq = ntohl(tcp->th_seq) + ((ntohs(ip->tot_len)-(TCP_HDRLEN+IP4_HDRLEN)));
+                  packet_info.ack = ntohl(tcp->ack_seq);
+                  send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((ntohl(tcp->ack_seq)),(ntohl(tcp->th_seq)+((ntohs(ip->tot_len)-(TCP_HDRLEN+IP4_HDRLEN)))),0,5,ACK,64240,0), NULL);
+                  printf("Payload: %s \n", payload);
+                  recv_data = true;
+                  return (char *)payload;
+              //}
+          }else if(tcp->syn){
+              printf("Syn: true\n");
+          }else if (tcp->fin){
+              printf("Fin: true\n");
+          }else if(tcp->rst){
+              printf("Rst: true\n");
+          }else if (tcp->ack){
+              printf("ACK\n");
+              return "ack";
+          }
+      }
+  }
+  return "none";
 }
