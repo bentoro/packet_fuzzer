@@ -22,10 +22,13 @@ struct Data{
 };
 
 double fuzz_ratio;
+time_t t;
 
 bool search(char *data, char *query,int length);
 int set_fuzz_ratio(double ratio);
 char *fuzz_payload(char *data, int length);
+char *replace_char(char *data, int length);
+char *delete_char(char *data, int length);
 struct Queue* create_queue(unsigned capacity);
 void enqueue(struct Queue* queue, struct tcp_packet tcp);
 struct tcp_packet dequeue(struct Queue* queue);

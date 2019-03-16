@@ -49,7 +49,6 @@ int main(int argc, char **argv) {
       printf("protocol: %d\n",atoi(optarg));
       break;
     case 'r':
-      //determine if raw sockets are going to be used
       raw = true;
       normal = false;
       printf("raw: true\n");
@@ -82,7 +81,7 @@ int main(int argc, char **argv) {
       dst_port = 8045;
       //changed source port
       printf("dst_port: %i\n",dst_port);
-      strcpy(string_port,src_port);
+      strcpy(string_port,"8045");
       strcpy(src_ip, "192.168.1.85");
       printf("src_ip: %s\n",src_ip);
       strcpy(target, "192.168.1.81");
@@ -94,8 +93,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  total_testcases = 3;
-  set_fuzz_ratio(0.75);
+  total_testcases = 10;
+  set_fuzz_ratio(0.50);
 
   if(raw){
       hints = set_hints(AF_INET, SOCK_STREAM, 0);
@@ -237,8 +236,10 @@ int main(int argc, char **argv) {
     } else if(line == 2){
           if(packet_info.protocol == TCP){
               if((casecount + 1) == 1){
+                //first packet seq = seq and ack = ack
                 tcp_packets[0].tcphdr = build_tcp_header((packet_info.seq), (packet_info.ack),temp[2],temp[3],temp[4],temp[5],temp[6]);
               } else {
+                //consecutive packets seq = ack and ack = seq
                 tcp_packets[0].tcphdr = build_tcp_header((packet_info.ack), (packet_info.seq),temp[2],temp[3],temp[4],temp[5],temp[6]);
               }
               print_time();
@@ -284,8 +285,6 @@ replaypacket:
                   memset(receieved_data, '\0', sizeof(receieved_data));
               } else {
                   print_time();
-                  //first packet seq = seq and ack = ack
-                  //consecutive packets seq = ack and ack = seq
                   send_raw_tcp_packet(tcp_packets[0].iphdr, tcp_packets[0].tcphdr, tcp_packets[0].payload);
                   recv_data = false;
                   while(recv_data == false){
@@ -296,6 +295,13 @@ replaypacket:
                         }
                   }
                   printf("payload: %s\n", receieved_data);
+                  if(search(receieved_data, result, sizeof(result))){
+                      printf("Found matching string\n");
+                      tcp_packets[end] = tcp_packets[0];
+                      print_time();
+                      print_tcp_packet(tcp_packets[end]);
+                      end++;
+                  }
                   memset(receieved_data, '\0', sizeof(receieved_data));
                   memset(packet_buffer, '\0', sizeof(packet_buffer));
               }
@@ -373,12 +379,6 @@ replaypacket:
   while(!complete){
       printf("CURRENT: %i\n", current);
       printf("END: %i\n", end);
-      if(total_testcases == casecount){
-        complete = true;
-        if(packet_info.protocol == TCP && raw){
-            end_tcp_connection(sending_socket);
-        }
-      }
       if(total_testcases != casecount){
               print_time();
               printf(" Test case #%i \n", (casecount + 1));
@@ -401,7 +401,38 @@ replaypacket:
                   memset(receieved_data, '\0', sizeof(receieved_data));
               } else {
                   print_time();
+                  if((casecount + 1) == 1){
+                    //first packet seq = seq and ack = ack
+                    tcp_packets[current].tcphdr = build_tcp_header((packet_info.seq), (packet_info.ack),tcp_packets[current].tcphdr.th_x2,tcp_packets[current].tcphdr.th_off,PSHACK,ntohs(tcp_packets[current].tcphdr.th_win),ntohs(tcp_packets[current].tcphdr.th_urp));
+                    /*tcp_packets[current].tcphdr.th_seq = packet_info.seq;
+                    tcp_packets[current].tcphdr.ack_seq = packet_info.ack;*/
+                  } else {
+                    //consecutive packets seq = ack and ack = seq
+                    /*tcp_packets[current].tcphdr.th_seq = packet_info.ack;
+                    tcp_packets[current].tcphdr.ack_seq = packet_info.seq;*/
+                    tcp_packets[current].tcphdr = build_tcp_header((packet_info.ack), (packet_info.seq),tcp_packets[current].tcphdr.th_x2,tcp_packets[current].tcphdr.th_off,PSHACK,ntohs(tcp_packets[current].tcphdr.th_win),ntohs(tcp_packets[current].tcphdr.th_urp));
+                  }
                   send_raw_tcp_packet(tcp_packets[current].iphdr, tcp_packets[current].tcphdr, tcp_packets[current].payload);
+                  print_tcp_packet(tcp_packets[current]);
+                  recv_data = false;
+                  while(recv_data == false){
+                      if(recvfrom(sending_socket, packet_buffer, sizeof(packet_buffer), 0, (struct sockaddr*)&icmpclient, &client_addr_len) < 0){
+                          perror("recvfrom");
+                        } else{
+                            strcpy(receieved_data,recv_tcp_packet(packet_buffer));
+                        }
+                  }
+                  printf("payload: %s\n", receieved_data);
+                  if(search(receieved_data, result, sizeof(result))){
+                      printf("Found matching string\n");
+                      tcp_packets[end] = tcp_packets[0];
+                      print_time();
+                      print_tcp_packet(tcp_packets[end]);
+                      end++;
+                  }
+                  memset(receieved_data, '\0', sizeof(receieved_data));
+                  memset(packet_buffer, '\0', sizeof(packet_buffer));
+
               }
           }else if(packet_info.protocol == UDP){
               if(current == end){
@@ -481,6 +512,9 @@ replaypacket1:
         casecount++;
       }else {
         complete = true;
+        if(packet_info.protocol == TCP && raw){
+            end_tcp_connection(sending_socket);
+        }
       }
   }
   //fclose(config_file);
