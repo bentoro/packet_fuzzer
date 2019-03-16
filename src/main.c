@@ -33,7 +33,8 @@ int main(int argc, char **argv) {
     case 'd':
       //set destination port
       dst_port = atoi(optarg);
-      printf("src_port: %d\n",atoi(optarg));
+      strcpy(string_port, optarg);
+      printf("dst_port: %d\n",atoi(optarg));
       break;
     case 'p':
       //determine protocol
@@ -79,8 +80,9 @@ int main(int argc, char **argv) {
       printf("protocol: UDP\n");
       printf("src_port: %i\n", src_port);
       dst_port = 8045;
-      strcpy(string_port,"8045");
+      //changed source port
       printf("dst_port: %i\n",dst_port);
+      strcpy(string_port,src_port);
       strcpy(src_ip, "192.168.1.85");
       printf("src_ip: %s\n",src_ip);
       strcpy(target, "192.168.1.81");

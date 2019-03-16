@@ -916,7 +916,7 @@ char *recv_tcp_packet(void *packet){
   tcp = (struct tcphdr *)(packet + size_ip);
   size_tcp = TCP_HDRLEN;
   payload = (char *)(packet + size_ip + size_tcp);
-  if(ntohs(tcp->th_sport) == dst_port && ntohs(tcp->th_dport) == src_port){
+  if(ip->saddr == inet_addr(dst_ip) && ip->daddr == inet_addr(src_ip) && ntohs(tcp->th_sport) == dst_port && ntohs(tcp->th_dport) == src_port){
       if(!tcp->rst){
           if(tcp->fin && tcp->ack){
               printf("FINACK\n");
@@ -940,7 +940,6 @@ char *recv_tcp_packet(void *packet){
               }
           }else if(tcp->psh && tcp->ack){
               printf("PSHACK\n");
-              //if(!recv_data){
                   printf("Len: %d\n", ntohs(ip->tot_len));
                   printf("Sequence #: %u\n", ntohl(tcp->seq));
                   printf("Acknowledgement: %u \n", ntohl(tcp->ack_seq));
@@ -950,7 +949,6 @@ char *recv_tcp_packet(void *packet){
                   printf("Payload: %s \n", payload);
                   recv_data = true;
                   return (char *)payload;
-              //}
           }else if(tcp->syn){
               printf("Syn: true\n");
           }else if (tcp->fin){
