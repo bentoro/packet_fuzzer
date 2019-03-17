@@ -4,7 +4,7 @@ int main(int argc, char **argv) {
   srand( time(NULL) );
   struct timespec tim, tim2;
   tim.tv_sec  = 0;
-  tim.tv_nsec = 500000000L;
+  tim.tv_nsec = 0L;
   target = (char *)calloc(40, sizeof(char));
   src_ip = (char *)calloc(INET_ADDRSTRLEN, sizeof(char));
   dst_ip = (char *)calloc(INET_ADDRSTRLEN, sizeof(char));

@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include "../lib/fuzz.h"
 
 int main(int argc, char *argv[]) {
 	int sock, optval = 1, SERVER_PORT = 8045;
@@ -22,15 +23,28 @@ int main(int argc, char *argv[]) {
 		printf("could not bind socket\n");
 		return 1;
 	}
-
+    printf("server: waiting for connections...\n");
+    char right[50] = "The input that you have entered is correct";
+    char wrong[50] = "The input that you have entered is incorrect";
 	socklen_t client_address_len = sizeof(client_address);
 	while (true) {
 		char buffer[500];
 		int len = recvfrom(sock, buffer, sizeof(buffer), 0,(struct sockaddr *)&client_address, &client_address_len);
 
 		buffer[len] = '\0';
-		printf("DATA: '%s' from client %s\n", buffer, inet_ntoa(client_address.sin_addr));
-
+        if(len == 0){
+            break;
+        }
+        if(len > 0){
+            printf("Received: %s from %s\n",buffer, inet_ntoa(client_address.sin_addr));
+            if(search(buffer, "hello",sizeof(len))){
+		        sendto(sock, right, strlen(right), 0, (struct sockaddr *)&client_address, sizeof(client_address));
+                printf("Sent: %s\n",right);
+            }else{
+		        sendto(sock, wrong, strlen(wrong), 0, (struct sockaddr *)&client_address, sizeof(client_address));
+                printf("Sent: %s\n",wrong);
+            }
+        }
 		//sendto(sock, buffer, len, 0, (struct sockaddr *)&client_address, sizeof(client_address));
 	}
 

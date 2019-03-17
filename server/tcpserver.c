@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include "../lib/normal_socket_wrappers.h"
+#include "../lib/fuzz.h"
 
 #define PORT "8045"
 #define MAXCONNECTIONS 1024
@@ -75,15 +76,30 @@ int main(void){
     if (new_fd == -1) {
         perror("accept");
     }
-
+    char right[50] = "The input that you have entered is correct";
+    char wrong[50] = "The input that you have entered is incorrect";
     inet_ntop(their_addr.ss_family,get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
     printf("server: got connection from %s\n", s);
     while(1) {
+        int bytes_receieved;
         char data[1024];
+        memset(data,'\0',sizeof(data));
+        bytes_receieved = 0;
+        bytes_receieved = recv(new_fd, data, sizeof(data),0);
         //recv_normal_tcp_packet(new_fd, data, sizeof(data));
-        int bytes_receieved = recv(new_fd, data, sizeof(data),0);
-        printf("Received: %s from %s\n",data, s);
-        send_normal_tcp_packet(new_fd, data, bytes_receieved);
+        if(bytes_receieved == 0){
+            break;
+        }
+        if(bytes_receieved > 0){
+            printf("Received: %s from %s\n",data, s);
+            if(search(data, "hello",sizeof(bytes_receieved))){
+                send_normal_tcp_packet(new_fd, right, strlen(right));
+                printf("Sent: %s\n",right);
+            }else{
+                send_normal_tcp_packet(new_fd, wrong, strlen(wrong));
+                printf("Sent: %s\n",wrong);
+            }
+        }
     }
     close(new_fd);
     close(sockfd);

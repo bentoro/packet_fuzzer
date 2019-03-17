@@ -10,8 +10,10 @@
 #include <strings.h>
 #include <arpa/inet.h>
 #include <linux/if_ether.h>
+#include <linux/filter.h>
 #define SIZE_ETHERNET 14
 #define ICMP_HDRLEN 8
+
 
 void listener();
 void display(void *packet);
