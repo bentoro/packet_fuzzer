@@ -1,23 +1,41 @@
 #include "fuzz.h"
+/*
+int main(int argc, char **argv){
+    set_fuzz_ratio(0.5);
+    char data[1024] = "HELL THIS IS BENMAX PISH";
+    char payload[1024];
+    strcpy(payload, fuzz_payload(data,sizeof(data)));
+    printf("payload: %s\n",payload);
+    strcpy(payload, fuzz_payload(data,sizeof(data)));
+    printf("payload: %s\n",payload);
+    strcpy(payload, fuzz_payload(data,sizeof(data)));
+    printf("payload: %s\n",payload);
+    strcpy(payload, fuzz_payload(data,sizeof(data)));
+    printf("payload: %s\n",payload);
+    strcpy(payload, fuzz_payload(data,sizeof(data)));
+    printf("payload: %s\n",payload);
+    return 0;
+}*/
 
 bool search(char *data, char *query,int length){
-    int size = strlen(query);
+    int size;
     bool found = false;
     char substring[BUFSIZ];
     int counter= 0;
+    size = 0;
+    //size of the query
+    while (query[size] != '\0'){
+        size++;
+    }
     for(int i = 0; i <= length; i++){
-        //printf("i = %i\n", i);
         //if the character is the same as the first character of the query
         if(data[i] == query[0]){
-            //printf("Length: %i\n", length);
-            //printf("found first letter\n");
-            while(counter < size){
+            while(counter <= size){
                 substring[counter] = data[i+counter];
-                //printf("Substring[%i]: %c\n", counter,data[i+counter]);
                 counter++;
             }
             counter = 0;
-            //printf("substring: %s\n", substring);
+            //printf("Substring: %s\n",substring);
             if(strcmp(query, substring) == 0){
                 found = true;
             }
@@ -30,32 +48,42 @@ int set_fuzz_ratio(double ratio){
     fuzz_ratio = ratio;
     return ratio;
 }
+/*char *fuzz_payload(char *data, int length){
+    int bytes_to_fuzz = length * fuzz_ratio;
+    for(int i = 0; i<= bytes_to_fuzz; i++){
+        data[rand() % bytes_to_fuzz] = (int)(rand() % 126) + 25;
+    }
+    return data;
+}*/
 
 char *fuzz_payload(char *data, int length){
-    srand((unsigned) time(&t));
-    int random = rand() % 256;
-    if(random % 2 == 0){
-        return delete_char(data, length);
-    }else {
-        return replace_char(data, length);
+    int random;
+    int bytes_to_fuzz = length * fuzz_ratio;
+    for(int i = 0; i<= bytes_to_fuzz; i++){
+        random = rand() % length;
+        srand (i);
+        if(random% 2 == 0){
+            data[rand() % bytes_to_fuzz + 1] =  ' ';
+        } else if(random%2 == 1){
+            data[rand() % bytes_to_fuzz + 2] = ((int)((rand() % 128)) + 32);
+        }
     }
     return data;
 }
 
 char *delete_char(char *data, int length){
-    srand((unsigned) time(&t));
     int bytes_to_fuzz = length * fuzz_ratio;
     for(int i = 0; i<= bytes_to_fuzz; i++){
-        data[rand() % length] =  ' ';
+        data[rand() % bytes_to_fuzz] =  ' ';
     }
     return data;
 }
 
 char *replace_char(char *data, int length){
-    srand((unsigned) time(&t));
+    srand ( time(NULL) );
     int bytes_to_fuzz = length * fuzz_ratio;
     for(int i = 0; i<= bytes_to_fuzz; i++){
-        data[rand() % length] = (rand() % 127) + 32;
+        data[rand() % bytes_to_fuzz] = (int)((rand() % 128) + 32);
     }
     return data;
 }
@@ -86,7 +114,6 @@ void enqueue(struct Queue* queue, struct tcp_packet tcp){
     }
     queue->size = queue->size +1;
     printf("added to queue\n");
-    print_tcp_packet(tcp);
 }
 struct tcp_packet dequeue(struct Queue* queue){
         printf("REAR: %i\n",queue->rear);

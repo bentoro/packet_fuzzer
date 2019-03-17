@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <resolv.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -8,6 +9,7 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <arpa/inet.h>
+#include <linux/if_ether.h>
 #define SIZE_ETHERNET 14
 #define ICMP_HDRLEN 8
 
@@ -39,23 +41,7 @@ void display(void *packet){
   printf("Sizeof payload: %i\n",size_payload);
   printf("payload: %s\n", payload);
 }
-/*void display(void *buf, int bytes)
-{	int i;
-	struct iphdr *ip = buf;
-	struct icmphdr *icmp = buf+ip->ihl*4;
 
-	printf("\n");
-	printf("IPv%d: hdr-size=%d pkt-size=%d protocol=%d TTL=%d",
-		ip->version, ip->ihl*4, ntohs(ip->tot_len), ip->protocol,
-		ip->ttl);
-		printf("ICMP: type[%d/%d] checksum[%d] id[%d] seq[%d]\n",
-			icmp->type, icmp->code, ntohs(icmp->checksum),
-			icmp->un.echo.id, icmp->un.echo.sequence);
-}*/
-
-/*--------------------------------------------------------------------*/
-/*--- listener - separate process to listen for and collect messages--*/
-/*--------------------------------------------------------------------*/
 void listener(){	int sd;
 	struct sockaddr_in addr;
 	unsigned char buf[1024];

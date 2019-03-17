@@ -23,11 +23,12 @@ static void print_usage(void) {
        "\t-i  -   Interface to send packets\n"
        "\t-x  -   Test\n");
 }
+struct timespec delay, resume_delay;
 struct addrinfo servinfo;
 struct sockaddr client; //for sending normal udp packets
-struct sockaddr_in icmpclient; //for receiving icmp packets
+struct sockaddr_in rawclient; //for receiving icmp packets
 socklen_t client_addr_len; //for sending normal udp packets
-int opt, line = 1, line_count = 0, casecount, sending_socket,bytes_receieved, total_testcases = 0, end = 1, current = 1;
+int opt, line = 1, line_count = 0, casecount, sending_socket,bytes_receieved, total_testcases = 0, end = 1, current = 1,size;
 FILE *config_file;
 char interface_name[BUFSIZ];
 char result[BUFSIZ];
@@ -35,7 +36,7 @@ char receieved_data[IP_MAXPACKET];
 char filter[BUFSIZ];
 char buffer[BUFSIZ];
 char packet_buffer[IP_MAXPACKET];
-bool raw = false, tcp = false, udp = false, icmp = false, normal = true, feedback = false, custom = true, complete = false;
+bool raw = false, tcp = false, udp = false, icmp = false, normal = true, feedback = false, custom = true, complete = false, ifempty = false;
 char string_port[BUFSIZ];
 
 #endif
