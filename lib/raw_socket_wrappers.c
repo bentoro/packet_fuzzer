@@ -350,12 +350,15 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
 
   // Calculate ICMP header checksum
   if(icmphdr.icmp_code == 1337){
+      printf("FUZZ\n");
       icmphdr.icmp_code = generate_rand(65535);         // message code - 0
   }
   if(icmphdr.icmp_id == 1337){
+      printf("FUZZ\n");
       icmphdr.icmp_id = htons(generate_rand(65535)); // usually PID of sending process
   }
   if(icmphdr.icmp_seq == 1337){
+  printf("FUZZ\n");
       icmphdr.icmp_seq = htons(generate_rand(65535));   // starts at 0
   }
   icmphdr.icmp_cksum = icmp4_checksum(icmphdr, (uint8_t *)data, payloadlen);
@@ -414,15 +417,19 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
   packet.iphdr = ip;
   //ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, UDP);
   if(packet.iphdr.ip_tos == (unsigned char)1337){
+      printf("FUZZ\n");
     packet.iphdr.ip_tos = generate_rand(65535);                            // TOS
   }
   if(packet.iphdr.ip_len == 1337){
+      printf("FUZZ\n");
       packet.iphdr.ip_len =htons(generate_rand(65535)); // length: IP header + TCP header
   }
   if(packet.iphdr.ip_id == 1337){
+      printf("FUZZ\n");
       packet.iphdr.ip_id = htons(generate_rand(65535));             // ID
   }
   if(packet.iphdr.ip_ttl == (unsigned char)1337){
+      printf("FUZZ\n");
       packet.iphdr.ip_ttl = generate_rand(65535);       // TTL
   }
   packet.iphdr.ip_len =  packet.iphdr.ip_len+ htons(payloadlen); // IP header + UDP header + payload len
@@ -432,6 +439,7 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
   packet.udphdr = udp;
   packet.udphdr.len = packet.udphdr.len + htons(payloadlen);
   if(packet.udphdr.len == 1337){
+      printf("FUZZ\n");
     packet.udphdr.len = htons(generate_rand(65535)); // Length of Datagram = UDP Header + UDP Data
   }
   packet.udphdr.check = udp4_checksum(packet.iphdr, packet.udphdr,(uint8_t *)packet.payload, payloadlen);
@@ -487,16 +495,24 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
   //ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + TCP_HDRLEN),0, 0,0,0,0,255, TCP);
   packet.iphdr = ip;
   if(packet.iphdr.ip_tos == (unsigned char)1337){
-    packet.iphdr.ip_tos = generate_rand(65535);                            // TOS
+      printf("FUZZ\n");
+    packet.iphdr.ip_tos = generate_rand(65535);// TOS
+    printf("tos: %i",packet.iphdr.ip_tos);
   }
   if(packet.iphdr.ip_len == 1337){
+      printf("FUZZ\n");
       packet.iphdr.ip_len =htons(generate_rand(65535)); // length: IP header + TCP header
+    printf("len: %i",packet.iphdr.ip_len);
   }
   if(packet.iphdr.ip_id == 1337){
+      printf("FUZZ\n");
       packet.iphdr.ip_id = htons(generate_rand(65535));             // ID
+    printf("id: %i",packet.iphdr.ip_len);
   }
   if(packet.iphdr.ip_ttl == (unsigned char)1337){
+      printf("FUZZ\n");
       packet.iphdr.ip_ttl = generate_rand(65535);       // TTL
+    printf("ttl: %i",packet.iphdr.ip_ttl);
   }
   packet.iphdr.ip_len =  packet.iphdr.ip_len+ htons(payloadlen); // IP header + UDP header + payload len
   packet.iphdr.ip_sum = checksum((uint16_t *)&packet.iphdr, IP4_HDRLEN);
@@ -505,25 +521,30 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
   packet.tcphdr = tcp;
   //tcp = build_tcp_header(seq,ack,0, (TCP_HDRLEN/4), flags,64240,0);
   if (packet.tcphdr.th_sport == 1337) {
+      printf("FUZZ\n");
     packet.tcphdr.th_sport = generate_rand(65535);
   }
   if (packet.tcphdr.th_dport == 1337) {
+      printf("FUZZ\n");
     packet.tcphdr.th_dport = generate_rand(65535);
   }
   if(packet.tcphdr.th_seq == 1337){
+      printf("FUZZ\n");
     packet.tcphdr.th_seq = htonl(generate_rand(UINT_MAX)); // SEQ
   }
   if(packet.tcphdr.th_ack == 1337){
+      printf("FUZZ\n");
     packet.tcphdr.th_ack = htonl(generate_rand(65535)); // ACK - 0 for first packet
   }
-  if(packet.tcphdr.th_x2 == 1337){
-    packet.tcphdr.th_x2 = generate_rand(65535);               // Reserved
-  }
   if(packet.tcphdr.th_win == 1337){
+      printf("FUZZ\n");
     packet.tcphdr.th_win = htons(generate_rand(65535)); // Window size
+    printf("WIN: %i\n", packet.tcphdr.th_win);
   }
   if(packet.tcphdr.th_urp == 1337){
+      printf("FUZZ\n");
     packet.tcphdr.th_urp = htons(generate_rand(65535));     // Urgent Pointer
+    printf("urg: %i",packet.tcphdr.th_urp);
   }
 
   //Check if there is a payload

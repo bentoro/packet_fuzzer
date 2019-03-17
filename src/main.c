@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
       interface = search_interface("wlp2s0");
       src_port = 100;
       strcpy(result,"HELLO");
-      packet_info.protocol = UDP;
+      packet_info.protocol = TCP;
       printf("protocol: UDP\n");
       printf("src_port: %i\n", src_port);
       dst_port = 8045;
@@ -114,7 +114,6 @@ int main(int argc, char **argv) {
   while (fgets(buffer, sizeof(buffer), config_file) != NULL) {
     line_count++;
   }
-
   // check if the file does not have a total amount of lines divisible by 3
   if(normal){
         printf("# test cases: %i \n\n", (line_count));
@@ -170,7 +169,7 @@ int main(int argc, char **argv) {
       packet = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
   }
 
-  if((line_count == 0)){
+  if((line_count != 0)){
       while (fgets(buffer, sizeof(buffer), config_file) != NULL) {
         int temp[BUFSIZ];
         char payload[BUFSIZ];
@@ -207,6 +206,7 @@ int main(int argc, char **argv) {
         } else {
             strncpy(payload, buffer,sizeof(buffer));
         }
+
         if(line ==  1){
               print_time();
               printf(" Test case #%i \n", (casecount + 1));
@@ -215,25 +215,16 @@ int main(int argc, char **argv) {
                   tcp_packets[0].iphdr = build_ip_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
                   print_time();
                   printf(" IP Header filled \n");
-                  print_time();
-                  print_raw_ip_packet(tcp_packets[0].iphdr);
-
               }else if(packet_info.protocol == UDP){
                   memset(udp_packets,'\0',sizeof(udp_packet));
                   udp_packets[0].iphdr = build_ip_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
                   print_time();
                   printf(" IP Header filled \n");
-                  print_time();
-                  print_raw_ip_packet(udp_packets[0].iphdr);
-
               }else if(packet_info.protocol == ICMP){
                   memset(icmp_packets,'\0',sizeof(icmp_packet));
                   icmp_packets[0].iphdr = build_ip_header(temp[0], temp[1],temp[2],temp[3],temp[4],temp[5],temp[6],temp[7],temp[8],temp[9],temp[10]);
                   print_time();
                   printf(" IP Header filled \n");
-                  print_time();
-                  print_raw_ip_packet(icmp_packets[0].iphdr);
-
               }
               line++;
         } else if(line == 2){
@@ -247,23 +238,16 @@ int main(int argc, char **argv) {
                   }
                   print_time();
                   printf(" TCP Header filled \n");
-                  print_time();
-                  print_raw_tcp_packet(tcp_packets[0].tcphdr);
-
               }else if(packet_info.protocol == UDP){
                   udp_packets[0].udphdr = build_udp_header(temp[0]);
                   print_time();
                   printf(" UDP Header filled \n");
-                  print_time();
-                  print_raw_udp_packet(udp_packets[0].udphdr);
               }else if(packet_info.protocol == ICMP){
                   icmp_packets[0].icmphdr = build_icmp_header(temp[0],temp[1],temp[2],temp[3]);
                   print_time();
                   printf(" ICMP Header filled \n");
-                  print_time();
-                  print_raw_icmp_packet(icmp_packets[0].icmphdr);
-              }
             line++;
+              }
         } else if(line == 3){
     replaypacket:
               if(payload[0] == ' '){
@@ -280,7 +264,7 @@ int main(int argc, char **argv) {
                   print_time();
                   printf(" TCP Payload filled \n");
                   print_time();
-                  printf(" TCP Packet sent to %s - Payload: %s\n", target,tcp_packets[0].payload);
+                  printf(" TCP Packet sent to %s\n", target);
                   if(normal){
                       print_time();
                       send_normal_tcp_packet(sending_socket, tcp_packets[0].payload, strlen(tcp_packets[0].payload));
@@ -289,12 +273,12 @@ int main(int argc, char **argv) {
                       if(search(receieved_data, result, strlen(result))){
                           printf("Found matching string\n");
                           tcp_packets[end] = tcp_packets[0];
-                          print_time();
-                          print_tcp_packet(tcp_packets[end]);
                           end++;
                       }
                       memset(receieved_data, '\0', sizeof(receieved_data));
                   } else {
+                      print_time();
+                      print_tcp_packet(tcp_packets[end]);
                       print_time();
                       send_raw_tcp_packet(tcp_packets[0].iphdr, tcp_packets[0].tcphdr, tcp_packets[0].payload);
                       recv_data = false;
@@ -309,9 +293,6 @@ int main(int argc, char **argv) {
                       if(search(receieved_data, result, strlen(result))){
                           printf("Found matching string\n");
                           tcp_packets[end] = tcp_packets[0];
-                          printf("END: %i\n", end);
-                          print_time();
-                          print_tcp_packet(tcp_packets[end]);
                           end++;
                       }
                       memset(receieved_data, '\0', sizeof(receieved_data));
@@ -327,8 +308,7 @@ int main(int argc, char **argv) {
                   print_time();
                   printf(" UDP Payload filled \n");
                   print_time();
-                  printf(" UDP Packet sent to %s - Payload: %s\n", target,udp_packets[0].payload);
-
+                  printf(" UDP Packet sent to %s\n", target);
                   if(normal){
                       send_normal_udp_packet(sending_socket, udp_packets[0].payload, strlen(udp_packets[0].payload), servinfo.ai_addr, servinfo.ai_addrlen);
                       bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
@@ -343,6 +323,8 @@ int main(int argc, char **argv) {
                       }
                       memset(receieved_data, '\0', sizeof(receieved_data));
                   } else {
+                      print_time();
+                      print_udp_packet(udp_packets[0]);
                       print_time();
                       send_raw_udp_packet(udp_packets[0].iphdr, udp_packets[0].udphdr, udp_packets[0].payload);
                       memset(receieved_data,'\0', sizeof(receieved_data));
@@ -362,10 +344,9 @@ int main(int argc, char **argv) {
                   memset(icmp_packets[0].payload, '\0',sizeof(icmp_packets[0].payload));
                   strncpy(icmp_packets[0].payload, payload, strlen(payload) -1);
                   print_time();
-                  printf(" ICMP Payload filled \n");
+                  printf(" ICMP Packet sent to %s\n", target);
                   print_time();
-                  printf(" Payload: %s\n", icmp_packets[0].payload);
-                  print_time();
+                  print_udp_packet(udp_packets[0]);
                   send_raw_icmp_packet(icmp_packets[0].iphdr, icmp_packets[0].icmphdr, icmp_packets[0].payload);
                   memset(receieved_data,'\0', sizeof(receieved_data));
                   if(recvfrom(sending_socket, receieved_data, sizeof(receieved_data), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
@@ -387,20 +368,20 @@ int main(int argc, char **argv) {
                           end++;
                       }
                   }
-              }
-              }
+              } //ICMP
+            }
             printf("\n");
             if(nanosleep(&delay, &resume_delay) < 0) {
             }
             casecount++;
             if(!normal){
                 line = 1;
-            }
+            } //line3
         }
-      }
+      }//fgets
   }else {
       print_time();
-      printf("No user test cases\n");
+      printf(" No user test cases\n");
   }
 
   while(!complete){
