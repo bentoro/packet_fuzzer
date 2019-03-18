@@ -1,13 +1,12 @@
 #include "main.h"
 
 int main(int argc, char **argv) {
+  //initilize the seed as the current time
   srand( time(NULL) );
-  struct timespec tim, tim2;
-  tim.tv_sec  = 0;
-  tim.tv_nsec = 0L;
   target = (char *)calloc(40, sizeof(char));
   src_ip = (char *)calloc(INET_ADDRSTRLEN, sizeof(char));
   dst_ip = (char *)calloc(INET_ADDRSTRLEN, sizeof(char));
+
   //Check if user is Root
   if (geteuid() != 0) {
     printf("Must run as root\n");
@@ -76,7 +75,7 @@ int main(int argc, char **argv) {
       interface = search_interface("wlp2s0");
       src_port = 100;
       strcpy(result,"HELLO");
-      packet_info.protocol = TCP;
+      packet_info.protocol = ICMP;
       printf("protocol: UDP\n");
       printf("src_port: %i\n", src_port);
       dst_port = 8045;
@@ -94,7 +93,18 @@ int main(int argc, char **argv) {
     }
   }
 
-  total_testcases = 10;
+  //set send delay
+  if(packet_info.protocol == TCP){
+    delay.tv_sec = 0;
+    delay.tv_nsec = 500000000L;
+  } else if(packet_info.protocol == UDP){
+    delay.tv_sec = 1;
+    delay.tv_nsec = 0;
+  } else if(packet_info.protocol == ICMP){
+    delay.tv_sec = 1;
+    delay.tv_nsec = 0;
+  }
+  total_testcases = 3;
   set_fuzz_ratio(0.90);
 
   if(raw){
@@ -191,7 +201,7 @@ int main(int argc, char **argv) {
                 // check if the field should be fuzzed
                 if(strcmp(value, "FUZZ") == 0){
                     printf("FUZZ\n");
-                    ch = 1337;
+                    ch = 1339;
                 } else {
                     ch = atoi(value);
                 }
@@ -246,19 +256,19 @@ int main(int argc, char **argv) {
                   icmp_packets[0].icmphdr = build_icmp_header(temp[0],temp[1],temp[2],temp[3]);
                   print_time();
                   printf(" ICMP Header filled \n");
-            line++;
               }
+            line++;
         } else if(line == 3){
     replaypacket:
+              if(normal){
+                      print_time();
+                      printf(" Test case #%i \n", (casecount + 1));
+              }
               if(payload[0] == ' '){
                       print_time();
                       printf("PAYLOAD IS EMPTY\n");
               } else {
               if(packet_info.protocol == TCP){
-                  if(normal){
-                      print_time();
-                      printf(" Test case #%i \n", (casecount + 1));
-                  }
                   memset(tcp_packets[0].payload, '\0',sizeof(tcp_packets[0].payload));
                   strncpy(tcp_packets[0].payload, payload,strlen(payload)-1);
                   print_time();
@@ -271,14 +281,15 @@ int main(int argc, char **argv) {
                       bytes_receieved = recv(sending_socket, receieved_data, sizeof(receieved_data),0);
                       printf(" Received: %s \n", receieved_data);
                       if(search(receieved_data, result, strlen(result))){
-                          printf("Found matching string\n");
-                          tcp_packets[end] = tcp_packets[0];
-                          end++;
+                          print_time();
+                          printf(" Found matching string packet added to queue #%i\n", size);
+                          tcp_packets[size] = tcp_packets[0];
+                          print_tcp_packet(tcp_packets[size]);
+                          size++;
                       }
                       memset(receieved_data, '\0', sizeof(receieved_data));
                   } else {
-                      print_time();
-                      print_tcp_packet(tcp_packets[end]);
+                      print_tcp_packet(tcp_packets[size]);
                       print_time();
                       send_raw_tcp_packet(tcp_packets[0].iphdr, tcp_packets[0].tcphdr, tcp_packets[0].payload);
                       recv_data = false;
@@ -286,23 +297,23 @@ int main(int argc, char **argv) {
                           if(recvfrom(sending_socket, packet_buffer, sizeof(packet_buffer), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
                               perror("recvfrom");
                             } else{
+                                print_time();
+                                printf(" Received reply from %s \n", target);
                                 strcpy(receieved_data,recv_tcp_packet(packet_buffer));
                             }
                       }
                       printf("payload: %s\n", receieved_data);
                       if(search(receieved_data, result, strlen(result))){
-                          printf("Found matching string\n");
-                          tcp_packets[end] = tcp_packets[0];
-                          end++;
+                          print_time();
+                          printf(" Found matching string packet added to queue #%i\n", size);
+                          tcp_packets[size] = tcp_packets[0];
+                          print_tcp_packet(tcp_packets[size]);
+                          size++;
                       }
                       memset(receieved_data, '\0', sizeof(receieved_data));
                       memset(packet_buffer, '\0', sizeof(packet_buffer));
                   }
               }else if(packet_info.protocol == UDP){
-                  if(normal){
-                      print_time();
-                      printf(" Test case #%i \n", (casecount + 1));
-                  }
                   memset(udp_packets[0].payload, '\0',sizeof(udp_packets[0].payload));
                   strncpy(udp_packets[0].payload, payload, strlen(payload)-1);
                   print_time();
@@ -315,15 +326,14 @@ int main(int argc, char **argv) {
                       print_time();
                       printf(" Received: %s \n", receieved_data);
                       if(search(receieved_data, result, sizeof(result))){
-                          printf("Found matching string\n");
-                          udp_packets[end] = udp_packets[0];
                           print_time();
-                          print_udp_packet(udp_packets[end]);
-                          end++;
+                          printf(" Found matching string packet added to queue #%i\n", size);
+                          udp_packets[size] = udp_packets[0];
+                          print_udp_packet(udp_packets[size]);
+                          size++;
                       }
                       memset(receieved_data, '\0', sizeof(receieved_data));
                   } else {
-                      print_time();
                       print_udp_packet(udp_packets[0]);
                       print_time();
                       send_raw_udp_packet(udp_packets[0].iphdr, udp_packets[0].udphdr, udp_packets[0].payload);
@@ -332,11 +342,11 @@ int main(int argc, char **argv) {
                       print_time();
                       printf(" Received: %s \n", receieved_data);
                       if(search(receieved_data, result, sizeof(result))){
-                          printf("Found matching string\n");
-                          udp_packets[end] = udp_packets[0];
                           print_time();
-                          print_udp_packet(udp_packets[end]);
-                          end++;
+                          printf(" Found matching string packet added to queue #%i\n", size);
+                          udp_packets[size] = udp_packets[0];
+                          print_udp_packet(udp_packets[size]);
+                          size++;
                       }
                       memset(receieved_data, '\0', sizeof(receieved_data));
                   }
@@ -345,27 +355,27 @@ int main(int argc, char **argv) {
                   strncpy(icmp_packets[0].payload, payload, strlen(payload) -1);
                   print_time();
                   printf(" ICMP Packet sent to %s\n", target);
+                  print_icmp_packet(icmp_packets[0]);
                   print_time();
-                  print_udp_packet(udp_packets[0]);
                   send_raw_icmp_packet(icmp_packets[0].iphdr, icmp_packets[0].icmphdr, icmp_packets[0].payload);
                   memset(receieved_data,'\0', sizeof(receieved_data));
                   if(recvfrom(sending_socket, receieved_data, sizeof(receieved_data), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
                         perror("recvfrom");
                   } else {
+                        print_time();
+                        printf(" Received reply from %s \n", target);
                         strcpy(receieved_data,recv_icmp_packet(receieved_data));
                   }
-                  print_time();
-                  printf(" Received: %s \n", receieved_data);
                   if(replay == true){
                     replay = false;
                     goto replaypacket;
                   } else {
                       if(search(receieved_data, result, sizeof(result))){
-                          printf("Found matching string\n");
-                          icmp_packets[end] = icmp_packets[0];
                           print_time();
-                          print_icmp_packet(icmp_packets[end]);
-                          end++;
+                          printf(" Found matching string packet added to queue #%i\n", size);
+                          icmp_packets[size] = icmp_packets[0];
+                          print_icmp_packet(icmp_packets[size]);
+                          size++;
                       }
                   }
               } //ICMP
@@ -385,9 +395,12 @@ int main(int argc, char **argv) {
   }
 
   while(!complete){
-      printf("CURRENT: %i\n", current);
-      printf("END: %i\n", end);
+      if(debug){
+          printf("CURRENT: %i\n", current);
+          printf("size: %i\n", size);
+      }
       if(total_testcases != casecount){
+replaypacket1:
               print_time();
               printf(" Test case #%i \n", (casecount + 1));
           if(packet_info.protocol == TCP){
@@ -396,26 +409,29 @@ int main(int argc, char **argv) {
                 tcp_packets[current].tcphdr = build_tcp_header(1337,0,0,5,PSHACK,64249,0);
                 strcpy(tcp_packets[current].payload, "hello");
 
-              }else if(current == end || end ==1){
+              }else if(current == size || size ==1){
                 //no more items in the queue
-                current = 1;
+                if(size == 1){
+                    current = 0;
+                } else {
+                    current = 1;
+                }
               }
               print_time();
-              printf(" TCP Payload filled \n");
-              print_time();
+              printf(" TCP Packet filled \n");
               strcpy(tcp_packets[current].payload,fuzz_payload(tcp_packets[current].payload,sizeof(tcp_packets[current].payload)));
-              printf(" TCP Packet sent to %s - Payload: %s\n", target,tcp_packets[current].payload);
+              print_tcp_packet(tcp_packets[current]);
               if(normal){
                   print_time();
                   send_normal_tcp_packet(sending_socket, tcp_packets[current].payload, strlen(tcp_packets[current].payload));
                   bytes_receieved = recv(sending_socket, receieved_data, sizeof(receieved_data),0);
                   printf(" Received: %s \n", receieved_data);
                   if(search(receieved_data, result, sizeof(result))){
-                      printf("Found matching string\n");
-                      tcp_packets[end] = tcp_packets[0];
                       print_time();
-                      print_tcp_packet(tcp_packets[end]);
-                      end++;
+                      printf(" Found matching string packet added to queue #%i\n", size);
+                      tcp_packets[size] = tcp_packets[0];
+                      print_tcp_packet(tcp_packets[size]);
+                      size++;
                   }
                   memset(receieved_data, '\0', sizeof(receieved_data));
               } else {
@@ -436,16 +452,18 @@ int main(int argc, char **argv) {
                       if(recvfrom(sending_socket, packet_buffer, sizeof(packet_buffer), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
                           perror("recvfrom");
                         } else{
+                            print_time();
+                            printf(" Received reply from %s \n", target);
                             strcpy(receieved_data,recv_tcp_packet(packet_buffer));
                         }
                   }
                   printf("payload: %s\n", receieved_data);
                   if(search(receieved_data, result, sizeof(result))){
-                      printf("Found matching string\n");
-                      tcp_packets[end] = tcp_packets[0];
                       print_time();
-                      print_tcp_packet(tcp_packets[end]);
-                      end++;
+                      printf(" Found matching string packet added to queue #%i\n", size);
+                      tcp_packets[size] = tcp_packets[0];
+                      print_tcp_packet(tcp_packets[size]);
+                      size++;
                   }
                   memset(receieved_data, '\0', sizeof(receieved_data));
                   memset(packet_buffer, '\0', sizeof(packet_buffer));
@@ -456,32 +474,31 @@ int main(int argc, char **argv) {
                 udp_packets[current].iphdr = build_ip_header(5,4,0,28,0,0,0,0,0,255,8);
                 udp_packets[current].udphdr = build_udp_header(8);
                 strcpy(udp_packets[current].payload, "hello");
-              }else if(current == end || end == 1){
+              }else if(current == size || size == 1){
                 //no more items in the queue
-                current = 1;
-              }
-              if(normal){
-                  print_time();
-                  printf(" Test case #%i \n", (casecount + 1));
+                if(size == 1){
+                    current = 0;
+                } else {
+                    current = 1;
+                }
               }
               print_time();
-              printf(" UDP Payload filled \n");
-              print_time();
+              printf(" UDP Packet filled \n");
               strcpy(udp_packets[current].payload,fuzz_payload(udp_packets[current].payload,sizeof(udp_packets[current].payload)));
-              printf("Payload: %s\n",udp_packets[current].payload);
+              print_udp_packet(udp_packets[current]);
               printf(" UDP Packet sent to %s - Payload: %s\n", target,udp_packets[current].payload);
               if(normal){
-                  print_udp_packet(udp_packets[end]);
+                  print_udp_packet(udp_packets[size]);
                   send_normal_udp_packet(sending_socket, udp_packets[current].payload, strlen(udp_packets[current].payload), servinfo.ai_addr, servinfo.ai_addrlen);
                   bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
                   print_time();
                   printf(" Received: %s \n", receieved_data);
                   if(search(receieved_data, result, sizeof(result))){
-                      printf("Found matching string\n");
-                      udp_packets[end] = udp_packets[current];
                       print_time();
-                      print_udp_packet(udp_packets[end]);
-                      end++;
+                      printf(" Found matching string packet added to queue #%i\n", size);
+                      udp_packets[size] = udp_packets[current];
+                      print_udp_packet(udp_packets[size]);
+                      size++;
                   }
                   memset(receieved_data, '\0', sizeof(receieved_data));
               } else {
@@ -493,35 +510,40 @@ int main(int argc, char **argv) {
                   print_time();
                   printf(" Received: %s \n\n", receieved_data);
                   if(search(receieved_data, result, sizeof(result))){
-                      printf("Found matching string\n");
-                      udp_packets[end] = udp_packets[current];
                       print_time();
-                      print_udp_packet(udp_packets[end]);
-                      end++;
+                      printf(" Found matching string packet added to queue #%i\n", size);
+                      udp_packets[size] = udp_packets[current];
+                      print_time();
+                      print_udp_packet(udp_packets[size]);
+                      size++;
                   }
                   memset(receieved_data, '\0', sizeof(receieved_data));
               }
           }else if(packet_info.protocol == ICMP){
-replaypacket1:
               if(casecount + 1 == 1){
                 icmp_packets[current].iphdr = build_ip_header(5,4,0,28,0,0,0,0,0,255,9);
                 icmp_packets[current].icmphdr = build_icmp_header(8,0,1000,0);
                 strcpy(icmp_packets[current].payload, "hello");
-              }else if(current == end || end == 1){
+              }else if(current == size || size == 1){
                 //no more items in the queue
-                current = 1;
+                if(size == 1){
+                    current = 0;
+                } else {
+                    current = 1;
+                }
               }
               print_time();
-              printf(" ICMP Payload filled \n");
+              printf(" ICMP Packet filled \n");
               strcpy(icmp_packets[current].payload,fuzz_payload(icmp_packets[current].payload,sizeof(icmp_packets[current].payload)));
-              print_time();
-              printf(" Payload: %s\n", icmp_packets[current].payload);
+              print_icmp_packet(icmp_packets[current]);
               print_time();
               send_raw_icmp_packet(icmp_packets[current].iphdr, icmp_packets[current].icmphdr, icmp_packets[current].payload);
               memset(receieved_data,'\0', sizeof(receieved_data));
               if(recvfrom(sending_socket, receieved_data, sizeof(receieved_data), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
                     perror("recvfrom");
               } else {
+                    print_time();
+                    printf(" Received reply from %s \n", target);
                     strcpy(receieved_data,recv_icmp_packet(receieved_data));
               }
               print_time();
@@ -531,11 +553,11 @@ replaypacket1:
                 goto replaypacket1;
               } else {
                   if(search(receieved_data, result, sizeof(result))){
-                      printf("Found matching string\n");
-                      icmp_packets[end] = icmp_packets[0];
                       print_time();
-                      print_icmp_packet(icmp_packets[end]);
-                      end++;
+                      printf(" Found matching string packet added to queue #%i\n", size);
+                      icmp_packets[size] = icmp_packets[0];
+                      print_icmp_packet(icmp_packets[size]);
+                      size++;
                   }
               }
           }
