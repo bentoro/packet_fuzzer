@@ -62,7 +62,7 @@ struct ifreq search_interface(char *ifc) {
     exit(0);
   }
 
-  printf("Index for interface %s is %i\n", interface, ifr.ifr_ifindex);
+  printf("Interface: %s\n", interface);
 
   close(tmp_socket);
   free(interface);
@@ -362,6 +362,13 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
   iphdr.ip_sum = checksum((uint16_t *)&iphdr, IP4_HDRLEN);
 
   // Calculate ICMP header checksum
+  if(icmphdr.icmp_type == (unsigned char)1339){
+      icmphdr.icmp_type = generate_rand(65535);         // message code - 0
+      if(debug){
+          printf("FUZZ\n");
+          printf("type: %u\n",icmphdr.icmp_type);
+      }
+  }
   if(icmphdr.icmp_code == (unsigned char)1339){
       icmphdr.icmp_code = generate_rand(65535);         // message code - 0
       if(debug){
@@ -420,6 +427,7 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
     perror("sendto() failed ");
     exit(EXIT_FAILURE);
   }
+  print_time();
   printf(" ICMP Packet sent\n");
 
   close(sd);
@@ -437,7 +445,6 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
 
   //Build IP Header
   packet.iphdr = ip;
-  //ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + UDP_HDRLEN + payloadlen),0, 0,0,0,0,255, UDP);
   if(packet.iphdr.ip_tos == (unsigned char)1339){
       packet.iphdr.ip_tos = generate_rand(65535);// TOS
       if(debug){
@@ -504,6 +511,7 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
     perror("setsockopt() failed to bind to interface ");
     exit(EXIT_FAILURE);
   }
+  print_time();
   printf(" UDP Packet sent\n");
   // Send packet`.
   if (sendto(sending_socket, &packet, IP4_HDRLEN + UDP_HDRLEN + payloadlen, 0,
@@ -519,8 +527,6 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
 void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
   int sending_socket, payloadlen = 0;
   const int on = 1;
-  //struct ip ip;
-  //struct tcphdr tcp;
   struct sockaddr_in sin;
   struct tcp_packet packet;
 
@@ -529,7 +535,6 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
     payloadlen = strlen(packet.payload);
   }
   //Build IP Header
-  //ip = build_ip_header(IP4_HDRLEN/sizeof(uint32_t),4,0,(IP4_HDRLEN + TCP_HDRLEN),0, 0,0,0,0,255, TCP);
   packet.iphdr = ip;
   if(packet.iphdr.ip_tos == (unsigned char)1339){
       packet.iphdr.ip_tos = generate_rand(65535);// TOS
@@ -583,6 +588,7 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
     packet.tcphdr.th_seq = htonl(generate_rand(UINT_MAX)); // SEQ
       if(debug){
           printf("FUZZ\n");
+          printf("seq: %u\n",packet.tcphdr.th_seq);
       }
   }
   if(packet.tcphdr.th_ack == 1339){
@@ -607,8 +613,6 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
       }
   }
 
-  //Check if there is a payload
-  // payloadlen = strlen(packet.payload);
   packet.tcphdr.th_sum = tcp4_checksum(packet.iphdr, packet.tcphdr,(uint8_t *)packet.payload, payloadlen);
   //Let the Kernel know where to send the raw datagram
   //Fill the in_addr with the desired destination IP and pass the struct to sendto()
@@ -638,6 +642,7 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
     perror("sendto() failed ");
     exit(EXIT_FAILURE);
   }
+  print_time();
   printf(" TCP Packet sent\n");
   close(sending_socket);
 }
@@ -646,7 +651,6 @@ struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int fl
   int status;
   int *ip_flags = (int *)calloc(4, sizeof(int));
   struct ip iphdr;
-  //default should be IP4_HDRLEN
   iphdr.ip_hl = IHL; // header length = 5
   iphdr.ip_v = version;                              // version = 4
   if(tos == 1339){
@@ -658,6 +662,11 @@ struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int fl
       iphdr.ip_len =1339; // length: IP header + TCP header
   } else {
       iphdr.ip_len =htons(len); // length: IP header + TCP header
+  }
+  if(id == 1339){
+      iphdr.ip_id = 1339;             // ID
+  }else {
+      iphdr.ip_id = htons(id);             // ID
   }
   if(id == 1339){
       iphdr.ip_id = 1339;             // ID
@@ -809,7 +818,11 @@ struct udphdr build_udp_header(int len) {
 struct icmp build_icmp_header(int type, int code, int id, int seq) {
   struct icmp icmphdr;
   //ICMP_ECHO
-  icmphdr.icmp_type = type; // message type
+  if(type == 1339){
+      icmphdr.icmp_type = (unsigned char)1339;         // message code - 0
+  } else {
+      icmphdr.icmp_type = type;         // message code - 0
+  }
   if(code == 1339){
       icmphdr.icmp_code = (unsigned char)1339;         // message code - 0
   } else {
@@ -878,14 +891,14 @@ int generate_rand(double value) {
   return (int)(rand() / value);
 }
 
-void three_way_handshake(int sending_socket){
+void send_raw_syn_packet(int sending_socket){
     struct sockaddr_in tcpclient; //for receiving icmp packets
     socklen_t len; //for sending normal udp packets
     len = sizeof(tcpclient);
     char buf[IP_MAXPACKET];
     //send SYN packet
-    send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header(1337,0,0,5,SYN,64249,0), NULL);
-    threewayhandshake = false;
+    send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header(1339,0,0,5,SYN,64249,0), NULL);
+    syn_flag = false;
     if(recvfrom(sending_socket, buf, sizeof(buf), 0, (struct sockaddr*)&tcpclient, &len) < 0){
       perror("recvfrom");
     } else{
@@ -893,14 +906,14 @@ void three_way_handshake(int sending_socket){
     }
 }
 
-void end_tcp_connection(int sending_socket){
+void send_raw_fin_packet(int sending_socket){
     struct sockaddr_in tcpclient; //for receiving icmp packets
     socklen_t len; //for sending normal udp packets
     len = sizeof(tcpclient);
     char buf[IP_MAXPACKET];
     send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((packet_info.ack),(packet_info.seq),0,5,FINACK,64249,0), NULL);
-    endconnection = true;
-    if(endconnection){
+    fin_flag = true;
+    if(fin_flag){
         if(recvfrom(sending_socket, buf, sizeof(buf), 0, (struct sockaddr*)&tcpclient, &len) < 0){
           perror("recvfrom");
         } else{
@@ -966,7 +979,6 @@ char *recv_tcp_packet(void *packet){
   const char *payload;
   int size_ip;
   int size_tcp;
-  int size_payload;
   ip = (struct iphdr *)(packet);
   size_ip = ip->ihl * 4;
   tcp = (struct tcphdr *)(packet + size_ip);
@@ -975,20 +987,17 @@ char *recv_tcp_packet(void *packet){
   if(ip->saddr == inet_addr(dst_ip) && ip->daddr == inet_addr(src_ip) && ntohs(tcp->th_sport) == dst_port && ntohs(tcp->th_dport) == src_port){
       if(!tcp->rst){
           if(tcp->fin && tcp->ack){
-              printf("FINACK\n");
-              if(endconnection){
+              if(fin_flag){
                   send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((ntohl(tcp->ack_seq)),(ntohl(tcp->th_seq)+1),0,5,ACK,64240,0), NULL);
               }
           }else if(tcp->syn && tcp->ack){
-              printf("SYNACK\n");
-              if(!threewayhandshake){
+              if(!syn_flag){
                   packet_info.seq = ntohl(tcp->ack_seq);
                   packet_info.ack = ntohl(tcp->th_seq) + 1;
                   send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((ntohl(tcp->ack_seq)),(ntohl(tcp->th_seq)+1),0,5,ACK,64240,0), NULL);
-                  threewayhandshake = true;
+                  syn_flag = true;
               }
           }else if(tcp->psh && tcp->ack){
-              printf("PSHACK\n");
                   packet_info.seq = ntohl(tcp->th_seq) + ((ntohs(ip->tot_len)-(TCP_HDRLEN+IP4_HDRLEN)));
                   packet_info.ack = ntohl(tcp->ack_seq);
                   send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((ntohl(tcp->ack_seq)),(ntohl(tcp->th_seq)+((ntohs(ip->tot_len)-(TCP_HDRLEN+IP4_HDRLEN)))),0,5,ACK,64240,0), NULL);
@@ -998,16 +1007,15 @@ char *recv_tcp_packet(void *packet){
                   printf("  %i %i %02x %i %02x %02x %02x %i %02x\n",src_port, dst_port,ntohl(tcp->th_seq), ntohl(tcp->th_ack),tcp->th_x2,tcp->th_off,tcp->th_flags, ntohs(tcp->th_win), ntohs(tcp->th_urp));
                   print_time();
                   printf(" Payload: %s \n", payload);
-                  recv_data = true;
+                  pshack_flag = true;
                   return (char *)payload;
           }else if(tcp->syn){
-              printf("Syn: true\n");
+              return "syn";
           }else if (tcp->fin){
-              printf("Fin: true\n");
+              return "fin";
           }else if(tcp->rst){
-              printf("Rst: true\n");
+              return "rst";
           }else if (tcp->ack){
-              printf("ACK\n");
               return "ack";
           }
       }

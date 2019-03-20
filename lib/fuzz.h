@@ -34,6 +34,7 @@ void enqueue(struct Queue* queue, struct tcp_packet tcp);
 struct tcp_packet dequeue(struct Queue* queue);
 int is_full(struct Queue* queue);
 int is_empty(struct Queue* queue);
+int sizeofstring(char *data);
 /*struct tcp_packet front(struct Queue* queue);
 struct tcp_packet rear(struct Queue* queue);*/
 

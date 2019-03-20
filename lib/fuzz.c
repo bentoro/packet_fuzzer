@@ -17,16 +17,20 @@ int main(int argc, char **argv){
     return 0;
 }*/
 
+int sizeofstring(char *data){
+    int size = 0;
+    while (data[size] != '\0'){
+        size++;
+    }
+    return size;
+}
+
 bool search(char *data, char *query,int length){
     int size;
     bool found = false;
     char substring[BUFSIZ];
     int counter= 0;
-    size = 0;
-    //size of the query
-    while (query[size] != '\0'){
-        size++;
-    }
+    size = sizeofstring(query);
     for(int i = 0; i <= length; i++){
         //if the character is the same as the first character of the query
         if(data[i] == query[0]){
@@ -58,14 +62,14 @@ int set_fuzz_ratio(double ratio){
 
 char *fuzz_payload(char *data, int length){
     int random;
-    int bytes_to_fuzz = length * fuzz_ratio;
-    for(int i = 0; i<= bytes_to_fuzz; i++){
-        random = rand() % length;
-        srand (i);
+    int size = sizeofstring(data);
+    int bytes_to_fuzz = size * fuzz_ratio;
+    for(int i = 0; i<= size; i++){
+        random = rand() % size;
         if(random% 2 == 0){
-            data[rand() % bytes_to_fuzz + 1] =  ' ';
+            data[rand() % size] =  ' ';
         } else if(random%2 == 1){
-            data[rand() % bytes_to_fuzz + 2] = ((int)((rand() % 128)) + 32);
+            data[rand() % size] = ((int)((rand() % 128)) + 32);
         }
     }
     return data;
