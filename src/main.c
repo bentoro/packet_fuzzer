@@ -84,12 +84,12 @@ int main(int argc, char **argv) {
             // Interface to send packet through.
             feedback = true;
             custom = false;
-            raw = true;
-            normal = false;
+            raw = false;
+            normal = true;
             interface = search_interface("wlp2s0");
             src_port = 100;
             strcpy(result, "correct");
-            packet_info.protocol = TCP;
+            packet_info.protocol = UDP;
             printf("protocol: TCP\n");
             printf("src_port: %i\n", src_port);
             dst_port = 8045;
@@ -108,10 +108,11 @@ int main(int argc, char **argv) {
         }
     }
 
-  total_testcases = 3;
+  total_testcases = 500;
   set_fuzz_ratio(0.60);
   log_file = fopen("log","wb+");
   replys = fopen("replys","wb+");
+  debug = true;
 
   if(raw){
       hints = set_hints(AF_INET, SOCK_STREAM, 0);
@@ -174,8 +175,8 @@ int main(int argc, char **argv) {
       }
   }else if(packet_info.protocol == UDP){
       strncpy(protocol, "UDP", sizeof("UDP"));
-      delay.tv_sec = 1;
-      delay.tv_nsec = 0;
+      delay.tv_sec = 0;
+      delay.tv_nsec = 500000000;
       print_time();
       printf(" Allocated room for UDP packet\n");
       log_print_time();
@@ -185,7 +186,7 @@ int main(int argc, char **argv) {
       sending_socket = start_udp_server(src_port);
 	  client_addr_len = sizeof(rawclient);
       if(normal){
-          delay.tv_sec = 2;
+          delay.tv_sec = 0;
           delay.tv_nsec = 0;
           print_time();
           hints = set_hints(AF_UNSPEC,SOCK_DGRAM, 0);
@@ -404,7 +405,7 @@ replaypacket:
                       bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
                       print_time();
                       printf(" Received: %s \n", receieved_data);
-                      print_time();
+                      log_print_time();
                       fprintf(log_file," Received: %s \n", receieved_data);
                       if(search(receieved_data, result, sizeof(result))){
                           print_time();
@@ -672,9 +673,9 @@ replaypacket1:
         }
       }
   }
-  fclose(log_file);
-  fclose(replys);
-  fclose(config_file);
+  //fclose(log_file);
+  //fclose(replys);
+  //fclose(config_file);
   free(target);
   free(src_ip);
   free(dst_ip);

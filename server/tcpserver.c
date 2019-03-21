@@ -77,7 +77,7 @@ int main(void){
         perror("accept");
     }
     char right[50] = "The input that you have entered is correct";
-    char wrong[50] = "The input that you have entered is incorrect";
+    char wrong[50] = "The input that you have entered is wrong";
     inet_ntop(their_addr.ss_family,get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
     printf("server: got connection from %s\n", s);
     while(1) {

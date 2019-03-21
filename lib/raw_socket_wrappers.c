@@ -449,38 +449,40 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
       packet.iphdr.ip_tos = generate_rand(65535);// TOS
       if(debug){
           printf("FUZZ\n");
-          printf("tos: %i",packet.iphdr.ip_tos);
+          printf("tos: %i\n",packet.iphdr.ip_tos);
       }
   }
   if(packet.iphdr.ip_len == 1339){
       packet.iphdr.ip_len =htons(generate_rand(65535)); // length: IP header + TCP header
       if(debug){
           printf("FUZZ\n");
-          printf("len: %i",packet.iphdr.ip_len);
+          printf("len: %i\n",packet.iphdr.ip_len);
       }
   }
   if(packet.iphdr.ip_id == 1339){
       packet.iphdr.ip_id = htons(generate_rand(65535));             // ID
       if(debug){
           printf("FUZZ\n");
-          printf("id: %i",packet.iphdr.ip_len);
+          printf("id: %i\n",packet.iphdr.ip_len);
       }
   }
+
   if(packet.iphdr.ip_ttl == (unsigned char)1339){
       packet.iphdr.ip_ttl = generate_rand(65535);       // TTL
       if(debug){
           printf("FUZZ\n");
-          printf("ttl: %i",packet.iphdr.ip_ttl);
+          printf("ttl: %i\n",packet.iphdr.ip_ttl);
       }
   }
   packet.iphdr.ip_len =  packet.iphdr.ip_len+ htons(payloadlen); // IP header + UDP header + payload len
   packet.iphdr.ip_sum = checksum((uint16_t *)&packet.iphdr, IP4_HDRLEN);
 
+  printf("len :%u\n",packet.udphdr.len);
   // UDP header
   packet.udphdr = udp;
   packet.udphdr.len = packet.udphdr.len + htons(payloadlen);
   if(packet.udphdr.len == 1339){
-    packet.udphdr.len = htons(generate_rand(65535)); // Length of Datagram = UDP Header + UDP Data
+    packet.udphdr.len = htons(generate_rand(100)); // Length of Datagram = UDP Header + UDP Data
     if(debug){
         printf("FUZZ\n");
         printf("len :%u\n",packet.udphdr.len);
@@ -679,7 +681,7 @@ struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int fl
   ip_flags[3] = flag4;                    // Frag offset
   iphdr.ip_off = htons((ip_flags[0] << 15) + (ip_flags[1] << 14) +(ip_flags[2] << 13) + ip_flags[3]);
   if(ttl == 1339){
-      iphdr.ip_ttl = (unsigned char)1337;       // TTL
+      iphdr.ip_ttl = (unsigned char)1339;       // TTL
   }else {
       iphdr.ip_ttl = ttl;       // TTL
   }
@@ -994,6 +996,8 @@ int start_tcp_raw_client(){
 
 
 char *recv_icmp_packet(void *packet){
+  time_t t = time(NULL);
+  struct tm tm = * localtime( & t);
   struct iphdr *ip;
   struct icmp *icmp;
   const char *payload;
@@ -1013,6 +1017,12 @@ char *recv_icmp_packet(void *packet){
       printf(" %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
       print_time();
       printf(" Payload: %s\n", payload);
+      fprintf(log_file,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+      fprintf(log_file," %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+      fprintf(log_file,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+      fprintf(log_file," %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
+      fprintf(log_file,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+      fprintf(log_file," Payload: %s\n", payload);
       return (char *)payload;
   } else {
     //wrong source and destination ip

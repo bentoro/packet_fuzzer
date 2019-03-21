@@ -1,30 +1,11 @@
-//#include "../lib/raw_socket_wrappers.h"
-#include <arpa/inet.h>
-#include <net/if.h>
-#include <netdb.h>
-#include <netinet/ip.h>      //iphdr
-#include <netinet/ip_icmp.h> //icmp
-#include <netinet/tcp.h>     //tcphdr
-#include <netinet/udp.h>     //udphdr
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <time.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <limits.h>
-#define ICMP_HDRLEN 8 // Length of ICMP Header
+#include "../lib/raw_socket_wrappers.h"
 char *recv_icmp(void *packet);
 int start_icmp_client();
 void print_time();
 
 int main(int argc, char **argv){
     int sending_socket = start_icmp_client();
-    char receieved_data[65535];
+    char receieved_data[IP_MAXPACKET];
     struct sockaddr_in rawclient; //for receiving icmp packets
     socklen_t client_addr_len; //for sending normal udp packets
     while(1){
@@ -58,6 +39,9 @@ char *recv_icmp(void *packet){
       printf(" %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
       print_time();
       printf(" Payload: %s\n", payload);
+      /*icmp_packets[current].iphdr = build_ip_header(5,4,0,28,0,0,0,0,0,255,9);
+      icmp_packets[current].icmphdr = build_icmp_header(8,0,1000,0);
+      strcpy(icmp_packets[current].payload, "hello");*/
       return (char *)payload;
   }
   return NULL;
