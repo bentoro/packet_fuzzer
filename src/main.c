@@ -84,8 +84,8 @@ int main(int argc, char **argv) {
             // Interface to send packet through.
             feedback = true;
             custom = false;
-            raw = false;
-            normal = true;
+            raw = true;
+            normal = false;
             interface = search_interface("wlp2s0");
             src_port = 100;
             strcpy(result, "correct");
@@ -108,8 +108,8 @@ int main(int argc, char **argv) {
         }
     }
 
-  total_testcases = 500;
-  set_fuzz_ratio(0.60);
+  total_testcases = 10;
+  set_fuzz_ratio(0);
   log_file = fopen("log","wb+");
   replys = fopen("replys","wb+");
   debug = true;
@@ -174,6 +174,7 @@ int main(int argc, char **argv) {
 
       }
   }else if(packet_info.protocol == UDP){
+      create_filter(filter);
       strncpy(protocol, "UDP", sizeof("UDP"));
       delay.tv_sec = 0;
       delay.tv_nsec = 500000000;
@@ -402,20 +403,29 @@ replaypacket:
                       print_udp_packet(udp_packets[0]);
                       send_raw_udp_packet(udp_packets[0].iphdr, udp_packets[0].udphdr, udp_packets[0].payload);
                       memset(receieved_data,'\0', sizeof(receieved_data));
-                      bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
+                      //bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
+                      //while(!udp_data || replay == true){
+                      packet_info = packet_capture(filter, packet_info);
+                      //}
+                      if(replay == true){
+                        replay = false;
+                        goto replaypacket;
+                      } else {
                       print_time();
+                      strcpy(receieved_data,reply_payload);
                       printf(" Received: %s \n", receieved_data);
                       log_print_time();
                       fprintf(log_file," Received: %s \n", receieved_data);
-                      if(search(receieved_data, result, sizeof(result))){
-                          print_time();
-                          printf(" Found matching string packet added to queue #%i\n", size);
-                          log_print_time();
-                          fprintf(log_file," Found matching string packet added to queue #%i\n", size);
-                          udp_packets[size] = udp_packets[0];
-                          print_udp_packet(udp_packets[size]);
-                          log_print_udp_packet(udp_packets[size]);
-                          size++;
+                          if(search(receieved_data, result, sizeof(result))){
+                              print_time();
+                              printf(" Found matching string packet added to queue #%i\n", size);
+                              log_print_time();
+                              fprintf(log_file," Found matching string packet added to queue #%i\n", size);
+                              udp_packets[size] = udp_packets[0];
+                              print_udp_packet(udp_packets[size]);
+                              log_print_udp_packet(udp_packets[size]);
+                              size++;
+                          }
                       }
                       memset(receieved_data, '\0', sizeof(receieved_data));
                   }
@@ -572,9 +582,10 @@ replaypacket1:
               }
               strcpy(udp_packets[current].payload,fuzz_payload(udp_packets[current].payload,sizeof(udp_packets[current].payload)));
               print_udp_packet(udp_packets[current]);
-              printf(" UDP Packet sent to %s - Payload: %s\n", target,udp_packets[current].payload);
+              print_time();
+              printf(" UDP Packet sent to %s\n", target);
               log_print_udp_packet(udp_packets[current]);
-              fprintf(log_file," UDP Packet sent to %s - Payload: %s\n", target,udp_packets[current].payload);
+              fprintf(log_file," UDP Packet sent to %s\n", target);
               if(normal){
                   print_udp_packet(udp_packets[size]);
                   send_normal_udp_packet(sending_socket, udp_packets[current].payload, strlen(udp_packets[current].payload), servinfo.ai_addr, servinfo.ai_addrlen);
@@ -597,7 +608,13 @@ replaypacket1:
                   print_time();
                   print_udp_packet(udp_packets[current]);
                   send_raw_udp_packet(udp_packets[current].iphdr, udp_packets[current].udphdr, udp_packets[current].payload);
-                  bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
+                  //bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
+                  packet_info = packet_capture(filter, packet_info);
+                  //}
+                  if(replay == true){
+                    replay = false;
+                    goto replaypacket1;
+                  } else {
                   print_time();
                   printf(" Received: %s \n\n", receieved_data);
                   fprintf(log_file," Received: %s \n\n", receieved_data);
@@ -611,6 +628,7 @@ replaypacket1:
                       print_udp_packet(udp_packets[size]);
                       log_print_udp_packet(udp_packets[size]);
                       size++;
+                  }
                   }
                   memset(receieved_data, '\0', sizeof(receieved_data));
               }
@@ -676,8 +694,8 @@ replaypacket1:
   //fclose(log_file);
   //fclose(replys);
   //fclose(config_file);
-  free(target);
-  free(src_ip);
-  free(dst_ip);
+  //free(target);
+  //free(src_ip);
+  //free(dst_ip);
   return (0);
 }

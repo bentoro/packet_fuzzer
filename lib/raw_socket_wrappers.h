@@ -75,7 +75,7 @@ struct addrinfo hints;
 char *target, *src_ip, *dst_ip;
 struct ifreq interface;
 struct packet_info packet_info;
-bool replay,pshack_flag,syn_flag, fin_flag, debug;
+bool replay,pshack_flag,syn_flag, fin_flag, debug, udp_data;
 char filter[BUFSIZ];
 char reply_payload[IP_MAXPACKET];
 FILE *log_file, *replys;

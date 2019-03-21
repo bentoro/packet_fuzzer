@@ -70,10 +70,6 @@ void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
 
   if(packet_info->protocol == TCP){
       if(ip->protocol == IPPROTO_TCP){
-        /*print_time();
-        printf(" Receieved: \n");
-        print_time();
-        printf(" %02x %02x %02x %02x %02x %02x %02x %02x %u %u %u\n",ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl,ip->protocol, ip->check, ip->saddr, ip->daddr);*/
         parse_tcp(packet_info, pkthdr, packet);
     } else {
         //replay the packet if the receieved packet is incorrect
@@ -83,10 +79,6 @@ void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
     }
   } else if(packet_info->protocol == ICMP){
     if (ip->protocol == IPPROTO_ICMP) {
-        print_time();
-        printf(" Receieved: \n");
-        print_time();
-        printf(" %02x %02x %02x %02x %02x %02x %02x %02x %u %u %u\n",ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl,ip->protocol, ip->check, ip->saddr, ip->daddr);
         parse_icmp(packet_info, pkthdr, packet);
     } else {
         //replay the packet if the receieved packet is incorrect
@@ -96,10 +88,6 @@ void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
     }
   }else if(packet_info->protocol == UDP){
       if(ip->protocol == IPPROTO_UDP){
-        print_time();
-        printf(" Receieved: \n");
-        print_time();
-        printf(" %02x %02x %02x %02x %02x %02x %02x %02x %u %u %u\n",ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl,ip->protocol, ip->check, ip->saddr, ip->daddr);
         parse_udp(packet_info, pkthdr, packet);
     } else {
         //replay the packet if the receieved packet is incorrect
@@ -123,12 +111,17 @@ void parse_udp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr,
   size_ip = ip->ihl * 4;
   udphdr = (struct udphdr *)(packet + SIZE_ETHERNET + size_ip);
   size_udp = UDP_HDRLEN;
-  print_time();
-  printf(" %i %i %i\n",src_port, dst_port,ntohs(udphdr->len));
-  payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_udp);
-  size_payload = ntohs(ip->tot_len) - (size_ip + size_udp);
-  print_time();
-  printf(" %s\n", payload);
+  //if(ip->saddr == inet_addr(dst_ip) && ip->daddr == inet_addr(src_ip)){
+      print_time();
+      printf(" %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+      print_time();
+      printf(" %i %i %i\n",src_port, dst_port,ntohs(udphdr->len));
+      payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_udp);
+      size_payload = ntohs(ip->tot_len) - (size_ip + size_udp);
+      print_time();
+      printf(" Payload: %s \n", payload);
+      strcpy(reply_payload, (char *)payload);
+  //}
   pcap_breakloop(interfaceinfo);
 }
 void parse_icmp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr, const u_char *packet){
@@ -142,12 +135,12 @@ void parse_icmp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr
   size_ip = ip->ihl * 4;
   icmp = (struct icmp *)(packet + SIZE_ETHERNET + size_ip);
   size_icmp = ICMP_HDRLEN;
+  payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_icmp);
   print_time();
   printf(" %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
-  payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_icmp);
-  size_payload = ntohs(ip->tot_len) - (size_ip + size_icmp);
   print_time();
   printf(" %s\n", payload);
+  udp_data = true;
   pcap_breakloop(interfaceinfo);
 }
 void parse_tcp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr, const u_char *packet) {

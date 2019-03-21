@@ -477,7 +477,6 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
   packet.iphdr.ip_len =  packet.iphdr.ip_len+ htons(payloadlen); // IP header + UDP header + payload len
   packet.iphdr.ip_sum = checksum((uint16_t *)&packet.iphdr, IP4_HDRLEN);
 
-  printf("len :%u\n",packet.udphdr.len);
   // UDP header
   packet.udphdr = udp;
   packet.udphdr.len = packet.udphdr.len + htons(payloadlen);
