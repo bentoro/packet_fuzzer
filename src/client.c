@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #define PORT "8045"
 #define BUFSIZE 1024
@@ -39,6 +40,8 @@ int main(int argc, char *argv[]) {
       perror("client: socket");
       continue;
     }
+
+    fcntl(sockfd, F_SETFL, O_NONBLOCK);
 
     if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
       close(sockfd);

@@ -93,10 +93,10 @@ int main(void){
         if(bytes_receieved > 0){
             printf("Received: %s from %s\n",data, s);
             if(search(data, "hello",sizeof(bytes_receieved))){
-                send_normal_tcp_packet(new_fd, right, strlen(right));
+                send_normal_tcp_packet(new_fd, right, 42);
                 printf("Sent: %s\n",right);
             }else{
-                send_normal_tcp_packet(new_fd, wrong, strlen(wrong));
+                send_normal_tcp_packet(new_fd, wrong, 40);
                 printf("Sent: %s\n",wrong);
             }
         }

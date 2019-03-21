@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 	}
     printf("server: waiting for connections...\n");
     char right[50] = "The input that you have entered is correct";
-    char wrong[50] = "The input that you have entered is incorrect";
+    char wrong[50] = "The input that you have entered is wrong";
 	socklen_t client_address_len = sizeof(client_address);
 	while (true) {
 		char buffer[500];
@@ -38,10 +38,10 @@ int main(int argc, char *argv[]) {
         if(len > 0){
             printf("Received: %s from %s\n",buffer, inet_ntoa(client_address.sin_addr));
             if(search(buffer, "hello",sizeof(len))){
-		        sendto(sock, right, strlen(right), 0, (struct sockaddr *)&client_address, sizeof(client_address));
+		        sendto(sock, right, 42, 0, (struct sockaddr *)&client_address, sizeof(client_address));
                 printf("Sent: %s\n",right);
             }else{
-		        sendto(sock, wrong, strlen(wrong), 0, (struct sockaddr *)&client_address, sizeof(client_address));
+		        sendto(sock, wrong, 40, 0, (struct sockaddr *)&client_address, sizeof(client_address));
                 printf("Sent: %s\n",wrong);
             }
         }

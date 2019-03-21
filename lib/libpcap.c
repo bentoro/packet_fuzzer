@@ -70,16 +70,16 @@ void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
 
   if(packet_info->protocol == TCP){
       if(ip->protocol == IPPROTO_TCP){
-        print_time();
+        /*print_time();
         printf(" Receieved: \n");
         print_time();
-        printf(" %02x %02x %02x %02x %02x %02x %02x %02x %u %u %u\n",ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl,ip->protocol, ip->check, ip->saddr, ip->daddr);
+        printf(" %02x %02x %02x %02x %02x %02x %02x %02x %u %u %u\n",ip->ihl,ip->version, ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl,ip->protocol, ip->check, ip->saddr, ip->daddr);*/
         parse_tcp(packet_info, pkthdr, packet);
     } else {
         //replay the packet if the receieved packet is incorrect
-        print_time();
+        /*print_time();
         printf(" No reply receieved, Resending last packet\n");
-        replay = true;
+        replay = true;*/
     }
   } else if(packet_info->protocol == ICMP){
     if (ip->protocol == IPPROTO_ICMP) {
@@ -151,59 +151,53 @@ void parse_icmp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr
   pcap_breakloop(interfaceinfo);
 }
 void parse_tcp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+  time_t t = time(NULL);
+  struct tm tm = * localtime( & t);
   struct iphdr *ip;
   struct tcphdr *tcp;
   const u_char *payload;
-  int size_ip;
-  int size_payload;
-
-  printf("\nTCP Packet\n");
-
+  int size_ip,size_payload, size_tcp;
   ip = (struct iphdr *)(packet + SIZE_ETHERNET);
   size_ip = ip->ihl * 4;
   tcp = (struct tcphdr *)(packet + SIZE_ETHERNET + size_ip);
-  //#define TH_OFF(th)      (((th)->th_offx2 & 0xf0) >> 4)
-
-  // dont print if rst packet
+  size_tcp = tcp->doff * 4;
+  payload = (u_char *)(packet + 14 + size_ip + size_tcp);
+  size_payload = ntohs(ip->tot_len) - (size_ip + size_tcp);
   if (!tcp->rst) {
-    printf("Source port: %d\n", ntohs(tcp->th_sport));
-    printf("Destination port: %d\n", ntohs(tcp->th_dport));
-    printf("Sequence #: %u\n", ntohl(tcp->seq));
-    packet_info->seq = ntohl(tcp->seq);
-    printf("Acknowledgement: %u \n", ntohl(tcp->ack_seq));
-    packet_info->ack = ntohl(tcp->ack_seq);
-    printf("Len: %d\n", ntohs(ip->tot_len));
     if (tcp->fin && tcp->ack) {
-      printf("FinAck: true\n");
-      packet_info->flag = FINACK;
-    } else if (tcp->syn && tcp->ack) {
-      if (syn_flag) {
-        send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,TCP),build_tcp_header(0,0,0,5,ACK,64240,0), NULL);
-        //send_raw_tcp_packet(1,(ntohl(tcp->th_seq) + 1), "HELLO", PSHACK);
-      } else {
+      if(fin_flag){
+          send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((ntohl(tcp->ack_seq)),(ntohl(tcp->th_seq)+1),0,5,ACK,64240,0), NULL);
+          fin_flag = false;
       }
-      // Interface to send packet through.
-      packet_info->flag = SYNACK;
-      printf("SynAck: true\n");
+    } else if (tcp->syn && tcp->ack) {
+      if(!syn_flag){
+          packet_info->seq = ntohl(tcp->ack_seq);
+          packet_info->ack = ntohl(tcp->th_seq) + 1;
+          send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((ntohl(tcp->ack_seq)),(ntohl(tcp->th_seq)+1),0,5,ACK,64240,0), NULL);
+          syn_flag = true;
+      }
     } else if (tcp->psh && tcp->ack) {
-      printf("PshAck: true\n");
-      packet_info->flag = PSHACK;
-        if(syn_flag){
-            //send_raw_tcp_packet(6,6, NULL, ACK);
-            //send_raw_tcp_packet(6,6, "HI", PSHACK);
-    }
+          packet_info->seq = ntohl(tcp->th_seq) + ((ntohs(ip->tot_len)-(TCP_HDRLEN+IP4_HDRLEN)));
+          packet_info->ack = ntohl(tcp->ack_seq);
+          send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((ntohl(tcp->ack_seq)),(ntohl(tcp->th_seq)+((ntohs(ip->tot_len)-(TCP_HDRLEN+IP4_HDRLEN)))),0,5,ACK,64240,0), NULL);
+          print_time();
+          printf(" %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+          fprintf(log_file,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+          fprintf(log_file," %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+          print_time();
+          printf("  %i %i %02x %i %02x %02x %02x %i %02x\n",src_port, dst_port,ntohl(tcp->th_seq), ntohl(tcp->th_ack),tcp->th_x2,tcp->th_off,tcp->th_flags, ntohs(tcp->th_win), ntohs(tcp->th_urp));
+          fprintf(log_file,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+          fprintf(log_file,"  %i %i %02x %i %02x %02x %02x %i %02x\n",src_port, dst_port,ntohl(tcp->th_seq), ntohl(tcp->th_ack),tcp->th_x2,tcp->th_off,tcp->th_flags, ntohs(tcp->th_win), ntohs(tcp->th_urp));
+          strcpy(reply_payload, (char *)payload);
+          print_time();
+          printf(" Payload: %s \n", payload);
+          fprintf(log_file,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+          fprintf(log_file," Payload: %s \n", payload);
+          pshack_flag = true;
     } else if (tcp->syn) {
-      printf("Syn: true\n");
-      packet_info->flag = SYN;
     } else if (tcp->fin) {
-      printf("Fin: true\n");
-      packet_info->flag = FIN;
     } else if (tcp->rst) {
-      printf("Rst: true\n");
-      packet_info->flag = RST;
     } else if (tcp->ack) {
-      packet_info->flag = ACK;
-      printf("Ack: true\n");
     }
   }
 
@@ -217,8 +211,7 @@ void parse_tcp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr,
   pcap_breakloop(interfaceinfo);
 }
 
-void parse_payload(struct packet_info *packet_info, const u_char *payload,
-                   int len) {
+void parse_payload(struct packet_info *packet_info, const u_char *payload,int len) {
   printf("Payload: \n");
   printf("%s", payload);
   printf("%08X", payload); // print payload in HEX
