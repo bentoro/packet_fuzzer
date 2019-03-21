@@ -401,10 +401,11 @@ replaypacket:
                       memset(receieved_data, '\0', sizeof(receieved_data));
                   } else {
                       print_udp_packet(udp_packets[0]);
-                      send_raw_udp_packet(udp_packets[0].iphdr, udp_packets[0].udphdr, udp_packets[0].payload);
                       memset(receieved_data,'\0', sizeof(receieved_data));
+                      send_raw_udp_packet(udp_packets[0].iphdr, udp_packets[0].udphdr, udp_packets[0].payload);
                       //bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
                       //while(!udp_data || replay == true){
+
                       packet_info = packet_capture(filter, packet_info);
                       //}
                       if(replay == true){
@@ -605,7 +606,6 @@ replaypacket1:
                   }
                   memset(receieved_data, '\0', sizeof(receieved_data));
               } else {
-                  print_time();
                   print_udp_packet(udp_packets[current]);
                   send_raw_udp_packet(udp_packets[current].iphdr, udp_packets[current].udphdr, udp_packets[current].payload);
                   //bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
@@ -683,6 +683,7 @@ replaypacket1:
         current++;
         casecount++;
         printf("\n");
+        fprintf(log_file,"\n");
       }else {
         complete = true;
         if(packet_info.protocol == TCP && raw){

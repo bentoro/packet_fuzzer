@@ -51,22 +51,8 @@ void read_packet(u_char *args, const struct pcap_pkthdr *pkthdr,const u_char *pa
 void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,const u_char *packet) {
   struct iphdr *ip;
   u_int length = pkthdr->len;
-  u_int hlen, off, version;
-  int len;
-
-  // skip past the ethernet header
   ip = (struct iphdr *)(packet + sizeof(struct ether_header));
   length -= sizeof(struct ether_header);
-
-  if (length < sizeof(struct iphdr)) {
-    printf("Packet length is incorrect %d", length);
-    exit(1);
-  }
-
-  len = ntohs(ip->tot_len);
-  hlen = ip->ihl;
-  version = ip->version;
-  off = ntohs(ip->frag_off);
 
   if(packet_info->protocol == TCP){
       if(ip->protocol == IPPROTO_TCP){
@@ -90,12 +76,18 @@ void parse_ip(struct packet_info *packet_info, const struct pcap_pkthdr *pkthdr,
       if(ip->protocol == IPPROTO_UDP){
         parse_udp(packet_info, pkthdr, packet);
     } else {
-        //replay the packet if the receieved packet is incorrect
         print_time();
         printf(" No reply receieved, Resending last packet\n");
         replay = true;
+        //replay the packet if the receieved packet is incorrect
+        /*print_time();
+        printf(" No reply receieved, Resending last packet\n");
+        replay = true;*/
     }
   } else {
+        print_time();
+        printf(" No reply receieved, Resending last packet\n");
+        replay = true;
   }
   pcap_breakloop(interfaceinfo);
 }
@@ -111,7 +103,9 @@ void parse_udp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr,
   size_ip = ip->ihl * 4;
   udphdr = (struct udphdr *)(packet + SIZE_ETHERNET + size_ip);
   size_udp = UDP_HDRLEN;
-  //if(ip->saddr == inet_addr(dst_ip) && ip->daddr == inet_addr(src_ip)){
+
+  //if(ip->saddr == inet_addr(dst_ip) && ip->daddr == inet_addr(src_ip) && ntohs(udphdr->source) == dst_port && ntohs(udphdr->dest) == src_port){
+  if(ip->saddr == inet_addr(dst_ip) && ip->daddr == inet_addr(src_ip)){
       print_time();
       printf(" %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
       print_time();
@@ -121,7 +115,7 @@ void parse_udp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr,
       print_time();
       printf(" Payload: %s \n", payload);
       strcpy(reply_payload, (char *)payload);
-  //}
+  }
   pcap_breakloop(interfaceinfo);
 }
 void parse_icmp(struct packet_info *packet_info,const struct pcap_pkthdr *pkthdr, const u_char *packet){
