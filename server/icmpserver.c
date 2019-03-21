@@ -3,6 +3,8 @@ char *recv_icmp(void *packet);
 int start_icmp_client();
 void print_time();
 
+// echo "1" >  /proc/sys/net/ipv4/icmp_echo_ignore_all
+
 int main(int argc, char **argv){
     int sending_socket = start_icmp_client();
     char receieved_data[IP_MAXPACKET];

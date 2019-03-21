@@ -18,7 +18,6 @@ static void print_usage(void) {
        "\t-d  -   Destination port\n"
        "\t-p  -   Protocol type, TCP = 7, UDP = 8, ICMP = 9\n"
        "\t-i  -   Interface to send packets\n"
-       "\t-f  -   Feedback Algorithm\n"
        "\t-c  -   Number of testcases\n"
        "\t-i  -   Interface to send packets\n"
        "\t-x  -   Test\n");

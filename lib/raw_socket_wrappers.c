@@ -1,7 +1,6 @@
 
 #include "raw_socket_wrappers.h"
 
-// TODO: add to seperate library once working!
 char *resolve_host(char *target, struct addrinfo hints) {
   int status;
   void *tmp;
@@ -69,37 +68,30 @@ struct ifreq search_interface(char *ifc) {
   return ifr;
 }
 
-//TODO:Add credit to the writer
 // Computing the internet checksum (RFC 1071).
 uint16_t checksum(uint16_t *addr, int len) {
   int count = len;
   register uint32_t sum = 0;
   uint16_t answer = 0;
 
-  // Sum up 2-byte values until none or only one byte left.
   while (count > 1) {
     sum += *(addr++);
     count -= 2;
   }
 
-  // Add left-over byte, if any.
   if (count > 0) {
     sum += *(uint8_t *)addr;
   }
 
-  // Fold 32-bit sum into 16 bits; we lose information by doing this,
-  // increasing the chances of a collision.
-  // sum = (lower 16 bits) + (upper 16 bits shifted right 16 bits)
   while (sum >> 16) {
     sum = (sum & 0xffff) + (sum >> 16);
   }
 
-  // Checksum is one's compliment of sum.
   answer = ~sum;
 
   return (answer);
 }
-//TODO:Add credit to the writer
+//  P.D. Buchan (pdbuchan@yahoo.com)
 uint16_t tcp4_checksum(struct ip iphdr, struct tcphdr tcphdr, uint8_t *payload,int payloadlen) {
   uint16_t svalue;
   char buf[IP_MAXPACKET], cvalue;
@@ -202,7 +194,7 @@ uint16_t tcp4_checksum(struct ip iphdr, struct tcphdr tcphdr, uint8_t *payload,i
   return checksum((uint16_t *)buf, chksumlen);
 }
 
-//TODO:Add credit to the writer
+//  P.D. Buchan (pdbuchan@yahoo.com)
 uint16_t udp4_checksum(struct ip iphdr, struct udphdr udphdr, uint8_t *payload,int payloadlen) {
   char buf[IP_MAXPACKET];
   char *ptr;
@@ -274,7 +266,7 @@ uint16_t udp4_checksum(struct ip iphdr, struct udphdr udphdr, uint8_t *payload,i
   return checksum((uint16_t *)buf, chksumlen);
 }
 
-//TODO:Add credit to the writer
+//  P.D. Buchan (pdbuchan@yahoo.com)
 uint16_t icmp4_checksum(struct icmp icmphdr, uint8_t *payload, int payloadlen) {
   char buf[IP_MAXPACKET];
   char *ptr;
@@ -363,14 +355,18 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
 
   // Calculate ICMP header checksum
   if(icmphdr.icmp_type == (unsigned char)1339){
-      icmphdr.icmp_type = generate_rand(65535);         // message code - 0
+      int rando = generate_rand(18);
+      while(rando == 7 || rando == 6){
+         rando = generate_rand(18);
+      }
+      icmphdr.icmp_type = rando;         // message code - 0
       if(debug){
           printf("FUZZ\n");
           printf("type: %u\n",icmphdr.icmp_type);
       }
   }
   if(icmphdr.icmp_code == (unsigned char)1339){
-      icmphdr.icmp_code = generate_rand(65535);         // message code - 0
+      icmphdr.icmp_code = generate_rand(15);         // message code - 0
       if(debug){
           printf("FUZZ\n");
           printf("code: %u\n",icmphdr.icmp_code);
@@ -477,17 +473,18 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
   packet.iphdr.ip_len =  packet.iphdr.ip_len+ htons(payloadlen); // IP header + UDP header + payload len
   packet.iphdr.ip_sum = checksum((uint16_t *)&packet.iphdr, IP4_HDRLEN);
 
-  printf("len :%u\n",packet.udphdr.len);
   // UDP header
   packet.udphdr = udp;
   packet.udphdr.len = packet.udphdr.len + htons(payloadlen);
-  if(packet.udphdr.len == 1339){
-    packet.udphdr.len = htons(generate_rand(100)); // Length of Datagram = UDP Header + UDP Data
+  /*if(packet.udphdr.len == 1339){
+    int rando = (generate_rand(10)+8);
+    printf("Rand value: %i",rando);
+    packet.udphdr.len = htons(rando); // Length of Datagram = UDP Header + UDP Data
     if(debug){
         printf("FUZZ\n");
         printf("len :%u\n",packet.udphdr.len);
     }
-  }
+  }*/
   packet.udphdr.check = udp4_checksum(packet.iphdr, packet.udphdr,(uint8_t *)packet.payload, payloadlen);
 
   //let the Kernel know where to send the raw datagram
@@ -808,11 +805,13 @@ struct udphdr build_udp_header(int len) {
   struct udphdr udphdr;
   udphdr.source = htons(src_port);
   udphdr.dest = htons(dst_port);
-  if(len == 1339){
+
+  /*if(len == 1339){
+    printf("FUZZING UDP LEN\n");
     udphdr.len = 1339; // Length of Datagram = UDP Header + UDP Data
-  }else {
+  }else {*/
     udphdr.len = htons(len); // Length of Datagram = UDP Header + UDP Data
-  }
+  //}
 
   return udphdr;
 }
@@ -936,7 +935,7 @@ void log_print_icmp_packet(struct icmp_packet icmp) {
 }
 
 int generate_rand(double value) {
-  return (int)(rand() / value);
+  return (int)(rand() % (int)value);
 }
 
 void send_raw_syn_packet(int sending_socket){
@@ -1017,12 +1016,13 @@ char *recv_icmp_packet(void *packet){
       printf(" %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
       print_time();
       printf(" Payload: %s\n", payload);
-      fprintf(log_file,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-      fprintf(log_file," %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
-      fprintf(log_file,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-      fprintf(log_file," %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
-      fprintf(log_file,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-      fprintf(log_file," Payload: %s\n", payload);
+      fprintf(replys, "Test case #%i , reply from %s\n",(casecount +1), target);
+      fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+      fprintf(replys," %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+      fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+      fprintf(replys," %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
+      fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+      fprintf(replys," Payload: %s\n\n", payload);
       return (char *)payload;
   } else {
     //wrong source and destination ip
@@ -1065,7 +1065,7 @@ char *recv_tcp_packet(void *packet){
                   print_time();
                   printf(" %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
                   fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-                  fprintf(replys, "Test case #%i \n",(casecount +1));
+                  fprintf(replys, "Test case #%i , reply from %s\n",(casecount +1), target);
                   fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
                   fprintf(replys," %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
                   print_time();

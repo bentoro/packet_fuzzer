@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
 
     print_time();
     printf("Configuration Summary\n");
-    while ((opt = getopt(argc, argv, "h:t:s:d:p:rifc:x")) != -1) {
+    while ((opt = getopt(argc, argv, "h:t:s:d:p:ric:x")) != -1) {
         switch (opt) {
         case 'h':
             //set source ip
@@ -69,12 +69,6 @@ int main(int argc, char **argv) {
             strncpy(interface_name, optarg, sizeof(interface_name));
             interface = search_interface(interface_name);
             break;
-        case 'f':
-            feedback = true;
-            custom = false;
-            print_time();
-            printf(" Feedback Algorithm: true\n");
-            break;
         case 'c':
             total_testcases = atoi(optarg);
             print_time();
@@ -82,14 +76,12 @@ int main(int argc, char **argv) {
             break;
         case 'x':
             // Interface to send packet through.
-            feedback = true;
-            custom = false;
-            raw = false;
-            normal = true;
+            raw = true;
+            normal = false;
             interface = search_interface("wlp2s0");
             src_port = 100;
             strcpy(result, "correct");
-            packet_info.protocol = UDP;
+            packet_info.protocol = ICMP;
             printf("protocol: TCP\n");
             printf("src_port: %i\n", src_port);
             dst_port = 8045;
@@ -108,7 +100,7 @@ int main(int argc, char **argv) {
         }
     }
 
-  total_testcases = 500;
+  total_testcases = 2;
   set_fuzz_ratio(0.60);
   log_file = fopen("log","wb+");
   replys = fopen("replys","wb+");
@@ -171,7 +163,6 @@ int main(int argc, char **argv) {
           send_raw_syn_packet(sending_socket);
           if(nanosleep(&delay, &resume_delay) < 0) {
           }
-
       }
   }else if(packet_info.protocol == UDP){
       strncpy(protocol, "UDP", sizeof("UDP"));
@@ -182,7 +173,7 @@ int main(int argc, char **argv) {
       log_print_time();
       fprintf(log_file, " Allocated room for UDP packet\n");
       //Allocate atleast half of the total test cases
-      udp_packets = calloc((total_testcases)/2, sizeof(struct udp_packet));
+      udp_packets = calloc(((total_testcases)/2)+1, sizeof(struct udp_packet));
       sending_socket = start_udp_server(src_port);
 	  client_addr_len = sizeof(rawclient);
       if(normal){
@@ -195,7 +186,7 @@ int main(int argc, char **argv) {
       }
   }else if(packet_info.protocol == ICMP){
       strncpy(protocol, "ICMP", sizeof("ICMP"));
-      delay.tv_sec = 1;
+      delay.tv_sec = 0;
       delay.tv_nsec = 0;
       print_time();
       printf(" Allocated room for ICMP packet\n");
@@ -204,7 +195,7 @@ int main(int argc, char **argv) {
       sending_socket = start_icmp_client();
 	  client_addr_len = sizeof(rawclient);
       //Allocate atleast half of the total test cases
-      icmp_packets = calloc((total_testcases)/2, sizeof(struct icmp_packet));
+      icmp_packets = calloc(((total_testcases)/2) + 1, sizeof(struct icmp_packet));
       packet = (uint8_t *)calloc(IP_MAXPACKET, sizeof(uint8_t));
   }
 
@@ -322,8 +313,10 @@ replaypacket:
                       log_print_time();
                       send_normal_tcp_packet(sending_socket, tcp_packets[0].payload, strlen(tcp_packets[0].payload));
                       bytes_receieved = recv(sending_socket, receieved_data, sizeof(receieved_data),0);
-                      printf(" Received: %s \n", receieved_data);
-                      fprintf(log_file," Received: %s \n", receieved_data);
+                      log_print_time();
+                      fprintf(replys, "Test case #%i , reply from %s\n",(casecount +1), target);
+                      log_print_time();
+                      fprintf(replys," Received: %s \n", receieved_data);
                       if(search(receieved_data, result, strlen(result))){
                           print_time();
                           printf(" Found matching string packet added to queue #%i\n", size);
@@ -387,6 +380,10 @@ replaypacket:
                       bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
                       print_time();
                       printf(" Received: %s \n", receieved_data);
+                      log_print_time();
+                      fprintf(replys, "Test case #%i , reply from %s\n",(casecount +1), target);
+                      log_print_time();
+                      fprintf(replys," Received: %s \n", receieved_data);
                       if(search(receieved_data, result, sizeof(result))){
                           print_time();
                           printf(" Found matching string packet added to queue #%i\n", size);
@@ -406,7 +403,9 @@ replaypacket:
                       print_time();
                       printf(" Received: %s \n", receieved_data);
                       log_print_time();
-                      fprintf(log_file," Received: %s \n", receieved_data);
+                      fprintf(replys, "Test case #%i , reply from %s\n",(casecount +1), target);
+                      log_print_time();
+                      fprintf(replys," Received: %s \n", receieved_data);
                       if(search(receieved_data, result, sizeof(result))){
                           print_time();
                           printf(" Found matching string packet added to queue #%i\n", size);
@@ -432,16 +431,16 @@ replaypacket:
                   if(recvfrom(sending_socket, receieved_data, sizeof(receieved_data), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
                         perror("recvfrom");
                   } else {
+                        print_time();
+                        printf(" Received reply from %s \n", target);
+                        log_print_time();
+                        fprintf(log_file," Received reply from %s \n", target);
                         strcpy(receieved_data,recv_icmp_packet(receieved_data));
                   }
                   if(replay == true){
                     replay = false;
                     goto replaypacket;
                   } else {
-                      print_time();
-                      printf(" Received reply from %s \n", target);
-                      log_print_time();
-                      fprintf(log_file," Received reply from %s \n", target);
                       if(search(receieved_data, result, sizeof(result))){
                           print_time();
                           printf(" Found matching string packet added to queue #%i\n", size);
@@ -508,7 +507,10 @@ replaypacket1:
                   send_normal_tcp_packet(sending_socket, tcp_packets[current].payload, strlen(tcp_packets[current].payload));
                   bytes_receieved = recv(sending_socket, receieved_data, sizeof(receieved_data),0);
                   printf(" Received: %s \n", receieved_data);
-                  fprintf(log_file," Received: %s \n", receieved_data);
+                  log_print_time();
+                  fprintf(replys, "Test case #%i , reply from %s\n",(casecount +1), target);
+                  log_print_time();
+                  fprintf(replys," Received: %s \n", receieved_data);
                   if(search(receieved_data, result, sizeof(result))){
                       print_time();
                       printf(" Found matching string packet added to queue #%i\n", size);
@@ -581,7 +583,10 @@ replaypacket1:
                   bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
                   print_time();
                   printf(" Received: %s \n", receieved_data);
-                  fprintf(log_file," Received: %s \n\n", receieved_data);
+                  log_print_time();
+                  fprintf(replys, "Test case #%i , reply from %s\n",(casecount +1), target);
+                  log_print_time();
+                  fprintf(replys," Received: %s \n", receieved_data);
                   if(search(receieved_data, result, sizeof(result))){
                       print_time();
                       printf(" Found matching string packet added to queue #%i\n", size);
@@ -600,7 +605,10 @@ replaypacket1:
                   bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
                   print_time();
                   printf(" Received: %s \n\n", receieved_data);
-                  fprintf(log_file," Received: %s \n\n", receieved_data);
+                  log_print_time();
+                  fprintf(replys, "Test case #%i , reply from %s\n",(casecount +1), target);
+                  log_print_time();
+                  fprintf(replys," Received: %s \n", receieved_data);
                   if(search(receieved_data, result, sizeof(result))){
                       print_time();
                       printf(" Found matching string packet added to queue #%i\n", size);
@@ -636,13 +644,10 @@ replaypacket1:
               } else {
                     print_time();
                     printf(" Received reply from %s \n", target);
+                    log_print_time();
                     fprintf(log_file," Received reply from %s \n", target);
                     strcpy(receieved_data,recv_icmp_packet(receieved_data));
               }
-              print_time();
-              printf(" Received: %s \n", receieved_data);
-              log_print_time();
-              fprintf(log_file," Received: %s \n", receieved_data);
               if(replay == true){
                 replay = false;
                 goto replaypacket1;
