@@ -13,8 +13,13 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+    log_file = fopen("log","ab+");
+    replys = fopen("replys","ab+");
+
     print_time();
     printf("Configuration Summary\n");
+    log_print_time();
+    fprintf(log_file,"Configuration Summary\n");
     while ((opt = getopt(argc, argv, "h:t:s:d:p:ric:x")) != -1) {
         switch (opt) {
         case 'h':
@@ -22,18 +27,24 @@ int main(int argc, char **argv) {
             strncpy(src_ip, optarg, sizeof(INET_ADDRSTRLEN));
             print_time();
             printf(" Source ip: %s\n", optarg);
+            log_print_time();
+            fprintf(log_file," Source ip: %s\n", optarg);
             break;
         case 't':
             //set destination ip
             strncpy(dst_ip, optarg, sizeof(INET_ADDRSTRLEN));
             print_time();
             printf(" Destination ip: %s\n", optarg);
+            log_print_time();
+            fprintf(log_file," Destination ip: %s\n", optarg);
             break;
         case 's':
             //set source port
             src_port = atoi(optarg);
             print_time();
             printf(" Source Ip: %d\n", atoi(optarg));
+            log_print_time();
+            fprintf(log_file," Source Ip: %d\n", atoi(optarg));
             break;
         case 'd':
             //set destination port
@@ -48,15 +59,21 @@ int main(int argc, char **argv) {
             if (atoi(optarg) == TCP) {
                 print_time();
                 printf(" Protocol: TCP\n");
+                log_print_time();
+                fprintf(log_file," Protocol: TCP\n");
                 tcp = true;
             } else if (atoi(optarg) == UDP) {
                 udp = true;
                 print_time();
                 printf(" Protocol: UDP\n");
+                log_print_time();
+                fprintf(log_file," Protocol: UDP\n");
             } else if (atoi(optarg) == ICMP) {
                 icmp = true;
                 print_time();
                 printf(" Protocol: ICMP\n");
+                log_print_time();
+                fprintf(log_file," Protocol: ICMP\n");
             }
             break;
         case 'r':
@@ -64,6 +81,8 @@ int main(int argc, char **argv) {
             normal = false;
             print_time();
             printf(" Raw sockets: True\n");
+            log_print_time();
+            fprintf(log_file," Raw sockets: True\n");
             break;
         case 'i':
             strncpy(interface_name, optarg, sizeof(interface_name));
@@ -73,6 +92,8 @@ int main(int argc, char **argv) {
             total_testcases = atoi(optarg);
             print_time();
             printf(" Total # of testcaes: %i\n", atoi(optarg));
+            log_print_time();
+            fprintf(log_file," Total # of testcaes: %i\n\n", atoi(optarg));
             break;
         case 'x':
             // Interface to send packet through.
@@ -100,10 +121,8 @@ int main(int argc, char **argv) {
         }
     }
 
-  total_testcases = 2;
+  total_testcases = 5;
   set_fuzz_ratio(0.60);
-  log_file = fopen("log","wb+");
-  replys = fopen("replys","wb+");
   debug = true;
 
   if(raw){
@@ -397,6 +416,7 @@ replaypacket:
                       memset(receieved_data, '\0', sizeof(receieved_data));
                   } else {
                       print_udp_packet(udp_packets[0]);
+                      log_print_udp_packet(udp_packets[0]);
                       send_raw_udp_packet(udp_packets[0].iphdr, udp_packets[0].udphdr, udp_packets[0].payload);
                       memset(receieved_data,'\0', sizeof(receieved_data));
                       bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
@@ -426,6 +446,7 @@ replaypacket:
                   log_print_time();
                   fprintf(log_file," ICMP Packet sent to %s\n", target);
                   print_icmp_packet(icmp_packets[0]);
+                  log_print_icmp_packet(icmp_packets[0]);
                   send_raw_icmp_packet(icmp_packets[0].iphdr, icmp_packets[0].icmphdr, icmp_packets[0].payload);
                   memset(receieved_data,'\0', sizeof(receieved_data));
                   if(recvfrom(sending_socket, receieved_data, sizeof(receieved_data), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
@@ -637,6 +658,7 @@ replaypacket1:
               }
               strcpy(icmp_packets[current].payload,fuzz_payload(icmp_packets[current].payload,sizeof(icmp_packets[current].payload)));
               print_icmp_packet(icmp_packets[current]);
+              log_print_icmp_packet(icmp_packets[current]);
               send_raw_icmp_packet(icmp_packets[current].iphdr, icmp_packets[current].icmphdr, icmp_packets[current].payload);
               memset(receieved_data,'\0', sizeof(receieved_data));
               if(recvfrom(sending_socket, receieved_data, sizeof(receieved_data), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
@@ -670,6 +692,7 @@ replaypacket1:
         current++;
         casecount++;
         printf("\n");
+        fprintf(log_file,"\n");
       }else {
         complete = true;
         if(packet_info.protocol == TCP && raw){

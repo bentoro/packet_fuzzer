@@ -60,8 +60,10 @@ struct ifreq search_interface(char *ifc) {
     perror("ioctl() failed to find interface ");
     exit(0);
   }
-
+  print_time();
   printf("Interface: %s\n", interface);
+  log_print_time();
+  fprintf(log_file,"Interface: %s\n", interface);
 
   close(tmp_socket);
   free(interface);
@@ -1018,7 +1020,7 @@ char *recv_icmp_packet(void *packet){
       printf(" Payload: %s\n", payload);
       fprintf(replys, "Test case #%i , reply from %s\n",(casecount +1), target);
       fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-      fprintf(replys," %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+      fprintf(replys," %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
       fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
       fprintf(replys," %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
       fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
