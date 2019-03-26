@@ -31,7 +31,7 @@ static struct option long_options[] = {
     {"sport",         required_argument,  0,  2 },
     {"dport",         required_argument,  0,  3 },
     {"proto",         required_argument,  0,  4 },
-    {"raw",           required_argument,  0,  5 },
+    {"raw",           optional_argument,  0,  5 },
     {"nic",           required_argument,  0,  6 },
     {"testcases",     required_argument,  0,  7 },
     {"fuzz",          optional_argument,  0,  8 },

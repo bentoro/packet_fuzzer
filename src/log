@@ -33,3 +33,29 @@
 [2019-3-26 12:54:12]  Payload:  í  ëi ñaê  ò.
  Received reply from 192.168.1.75 
 
+[2019-3-26 13:3:7] Configuration Summary
+[2019-3-26 13:3:7]  Source IP: 192.168.1.73
+[2019-3-26 13:3:7]  Destination IP: 192.168.1.75
+[2019-3-26 13:3:7]  Source port: 100
+[2019-3-26 13:3:7]  Protocol: UDP
+[2019-3-26 13:3:7] Interface: wlp2s0
+[2019-3-26 13:3:7]  Total # of testcases: 3
+[2019-3-26 13:3:7]  String to search: correct
+[2019-3-26 13:3:7]  Allocated room for UDP packet
+
+[2019-3-26 13:3:7]  Test case #1 
+[2019-3-26 13:3:7]  UDP Payload filled 
+[2019-3-26 13:3:7]  UDP Packet sent to 192.168.1.75
+[2019-3-26 13:3:7] [2019-3-26 13:3:7] 
+[2019-3-26 13:3:7]  Test case #2 
+[2019-3-26 13:3:7]  UDP Payload filled 
+[2019-3-26 13:3:7]  UDP Packet sent to 192.168.1.75
+[2019-3-26 13:3:7] [2019-3-26 13:3:7] 
+[2019-3-26 13:3:7]  Test case #3 
+[2019-3-26 13:3:7]  UDP Payload filled 
+[2019-3-26 13:3:7]  UDP Packet sent to 192.168.1.75
+[2019-3-26 13:3:7] [2019-3-26 13:3:7] [2019-3-26 13:3:7]  Found matching string packet added to queue #1
+[2019-3-26 13:3:7]  00 00 00 0 00 00 0 00 192.168.1.73  00
+[2019-3-26 13:3:7]  100 8045 0
+[2019-3-26 13:3:7]  Payload: this is a test
+

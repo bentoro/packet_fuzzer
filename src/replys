@@ -13,3 +13,9 @@
 [2019-3-26 12:54:12]   100 8045 602cb4ab 371602590 00 05 18 64198 00
 [2019-3-26 12:54:12]  Payload: The input that you have entered is wrong 
 
+Test case #1 , reply from 192.168.1.75
+ Received: The input that you have entered is wrong 
+Test case #2 , reply from 192.168.1.75
+ Received: The input that you have entered is wrong 
+Test case #3 , reply from 192.168.1.75
+ Received: The input that you have entered is correct 
