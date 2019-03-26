@@ -74,7 +74,7 @@ struct ifreq search_interface(char *ifc) {
     exit(0);
   }
   print_time();
-  printf("Interface: %s\n", interface);
+  printf(" Interface: %s\n", interface);
   log_print_time();
   fprintf(log_file,"Interface: %s\n", interface);
 
@@ -522,7 +522,7 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
     exit(EXIT_FAILURE);
   }
   print_time();
-  printf(" ICMP Packet sent\n");
+  printf(" ICMP Packet sent:\n");
 
   close(sd);
 }
@@ -628,7 +628,7 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
     exit(EXIT_FAILURE);
   }
   print_time();
-  printf(" UDP Packet sent\n");
+  printf(" UDP Packet sent:\n");
   // Send packet`.
   if (sendto(sending_socket, &packet, IP4_HDRLEN + UDP_HDRLEN + payloadlen, 0,
              (struct sockaddr *)&sin, sizeof(struct sockaddr)) < 0) {
@@ -776,7 +776,7 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
     exit(EXIT_FAILURE);
   }
   print_time();
-  printf(" TCP Packet sent\n");
+  printf(" TCP Packet sent:\n");
   close(sending_socket);
 }
 
@@ -1075,8 +1075,10 @@ struct icmp build_icmp_header(int type, int code, int id, int seq) {
  *
  * ====================================================================================*/
 void print_raw_ip_packet(struct ip ip){
+   blue();
    print_time();
    printf(" %02x %02x %02x %i %02x %02x %i %02x %s %s %02x\n",ip.ip_hl,ip.ip_v, ip.ip_tos, ntohs(ip.ip_len), ip.ip_id, ip.ip_off, ip.ip_ttl,ip.ip_p, src_ip, dst_ip, ip.ip_sum);
+   reset();
 }
 
 /* =====================================================================================
@@ -1095,9 +1097,10 @@ void print_raw_ip_packet(struct ip ip){
  *
  * ====================================================================================*/
 void print_raw_tcp_packet(struct tcphdr tcphdr){
+   blue();
    print_time();
    printf(" %i %i %02x %i %02x %02x %02x %i %02x\n",src_port, dst_port,ntohl(tcphdr.th_seq), ntohl(tcphdr.th_ack),tcphdr.th_x2,tcphdr.th_off,tcphdr.th_flags, ntohs(tcphdr.th_win), ntohs(tcphdr.th_urp));
-
+   reset();
 }
 
 
@@ -1117,8 +1120,10 @@ void print_raw_tcp_packet(struct tcphdr tcphdr){
  *
  * ====================================================================================*/
 void print_raw_udp_packet(struct udphdr udphdr){
+   blue();
    print_time();
    printf(" %i %i %i\n",src_port, dst_port,ntohs(udphdr.len));
+   reset();
 
 }
 
@@ -1139,8 +1144,10 @@ void print_raw_udp_packet(struct udphdr udphdr){
  *
  * ====================================================================================*/
 void print_raw_icmp_packet(struct icmp icmp){
+   blue();
    print_time();
    printf(" %i %i %i %i\n",icmp.icmp_type, icmp.icmp_code,ntohs(icmp.icmp_id), ntohs(icmp.icmp_seq));
+   reset();
 
 }
 
@@ -1161,10 +1168,12 @@ void print_raw_icmp_packet(struct icmp icmp){
  * ====================================================================================*/
 
 void print_tcp_packet(struct tcp_packet tcp){
+    blue();
     print_raw_ip_packet(tcp.iphdr);
     print_raw_tcp_packet(tcp.tcphdr);
     print_time();
     printf(" Payload: %s\n",tcp.payload);
+    reset();
 }
 
 
@@ -1184,10 +1193,12 @@ void print_tcp_packet(struct tcp_packet tcp){
  *
  * ====================================================================================*/
 void print_udp_packet(struct udp_packet udp){
+    blue();
     print_raw_ip_packet(udp.iphdr);
     print_raw_udp_packet(udp.udphdr);
     print_time();
     printf(" Payload: %s\n",udp.payload);
+    reset();
 }
 
 
@@ -1207,10 +1218,12 @@ void print_udp_packet(struct udp_packet udp){
  *
  * ====================================================================================*/
 void print_icmp_packet(struct icmp_packet icmp){
+    blue();
     print_raw_ip_packet(icmp.iphdr);
     print_raw_icmp_packet(icmp.icmphdr);
     print_time();
     printf(" Payload: %s\n",icmp.payload);
+    reset();
 }
 
 
@@ -1559,12 +1572,14 @@ char *recv_icmp_packet(void *packet){
   payload = (char *)(packet + size_ip + size_icmp);
   size_payload = ntohs(ip->tot_len) - (size_ip + size_icmp);
   if(ip->saddr == inet_addr(dst_ip) && ip->daddr == inet_addr(src_ip)){
-      print_time();
-      printf(" %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
-      print_time();
+      green();
+      printf("[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+      printf(" %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+      printf("[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
       printf(" %i %i %i %i\n",icmp->icmp_type, icmp->icmp_code,ntohs(icmp->icmp_id), ntohs(icmp->icmp_seq));
-      print_time();
+      printf("[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
       printf(" Payload: %s\n", payload);
+      reset();
       fprintf(replys, "Test case #%i , reply from %s\n",(casecount +1), target);
       fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
       fprintf(replys," %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
@@ -1626,18 +1641,24 @@ char *recv_tcp_packet(void *packet){
                   packet_info.seq = ntohl(tcp->th_seq) + ((ntohs(ip->tot_len)-(TCP_HDRLEN+IP4_HDRLEN)));
                   packet_info.ack = ntohl(tcp->ack_seq);
                   send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((ntohl(tcp->ack_seq)),(ntohl(tcp->th_seq)+((ntohs(ip->tot_len)-(TCP_HDRLEN+IP4_HDRLEN)))),0,5,ACK,64240,0), NULL);
-                  print_time();
+                  green();
+                  printf("[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
                   printf(" %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
+                  reset();
                   fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
                   fprintf(replys, "Test case #%i , reply from %s\n",(casecount +1), target);
                   fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
                   fprintf(replys," %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",ip->ihl,ip->version,ip->tos, ip->tot_len, ip->id, ip->frag_off, ip->ttl, ip->protocol, ip->check, ip->saddr, ip->daddr);
-                  print_time();
+                  green();
+                  printf("[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
                   printf("  %i %i %02x %i %02x %02x %02x %i %02x\n",src_port, dst_port,ntohl(tcp->th_seq), ntohl(tcp->th_ack),tcp->th_x2,tcp->th_off,tcp->th_flags, ntohs(tcp->th_win), ntohs(tcp->th_urp));
+                  reset();
                   fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
                   fprintf(replys,"  %i %i %02x %i %02x %02x %02x %i %02x\n",src_port, dst_port,ntohl(tcp->th_seq), ntohl(tcp->th_ack),tcp->th_x2,tcp->th_off,tcp->th_flags, ntohs(tcp->th_win), ntohs(tcp->th_urp));
-                  print_time();
+                  green();
+                  printf("[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
                   printf(" Payload: %s \n", payload);
+                  reset();
                   fprintf(replys,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
                   fprintf(replys," Payload: %s \n\n", payload);
                   pshack_flag = true;
@@ -1655,6 +1676,23 @@ char *recv_tcp_packet(void *packet){
   }
   return "none";
 }
+
+void red () {
+  printf("\033[1;31m");
+}
+void green () {
+  printf("\033[1;32m");
+}
+
+
+void blue () {
+  printf("\033[1;34m");
+}
+
+void reset () {
+  printf("\033[0m");
+}
+
 /*
 int start_udp_server(int PORT){
 	int optval = 1;

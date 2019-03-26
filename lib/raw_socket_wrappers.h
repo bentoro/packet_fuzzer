@@ -130,6 +130,10 @@ void send_raw_syn_packet(int sending_socket);
 int start_tcp_raw_client();
 char *recv_tcp_packet(void *packet);
 void send_raw_fin_packet(int sending_socket);
+void red();
+void green();
+void blue();
+void reset();
 /*char *recv_udp_packet(void *packet);
 int start_udp_server(int PORT);*/
 

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <getopt.h>
 
 static void print_usage(void) {
   puts("Usage options: \n"
@@ -19,9 +20,25 @@ static void print_usage(void) {
        "\t-p  -   Protocol type, TCP = 7, UDP = 8, ICMP = 9\n"
        "\t-i  -   Interface to send packets\n"
        "\t-c  -   Number of testcases\n"
-       "\t-i  -   Interface to send packets\n"
+       "\t-f  -   Fuzz ratio\n"
        "\t-x  -   Test\n");
 }
+
+
+static struct option long_options[] = {
+    {"saddr",         required_argument,  0,  0 },
+    {"daddr",         required_argument,  0,  1 },
+    {"sport",         required_argument,  0,  2 },
+    {"dport",         required_argument,  0,  3 },
+    {"proto",         required_argument,  0,  4 },
+    {"raw",           required_argument,  0,  5 },
+    {"nic",           required_argument,  0,  6 },
+    {"testcases",     required_argument,  0,  7 },
+    {"fuzz",          optional_argument,  0,  8 },
+    {"query",         required_argument,  0,  9 },
+    {0,               0,                  0,  0 }
+};
+
 struct timespec delay, resume_delay;
 struct addrinfo servinfo;
 struct sockaddr client; //for sending normal udp packets
