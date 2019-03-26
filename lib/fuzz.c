@@ -1,21 +1,19 @@
 #include "fuzz.h"
-/*
-int main(int argc, char **argv){
-    set_fuzz_ratio(0.5);
-    char data[1024] = "HELL THIS IS BENMAX PISH";
-    char payload[1024];
-    strcpy(payload, fuzz_payload(data,sizeof(data)));
-    printf("payload: %s\n",payload);
-    strcpy(payload, fuzz_payload(data,sizeof(data)));
-    printf("payload: %s\n",payload);
-    strcpy(payload, fuzz_payload(data,sizeof(data)));
-    printf("payload: %s\n",payload);
-    strcpy(payload, fuzz_payload(data,sizeof(data)));
-    printf("payload: %s\n",payload);
-    strcpy(payload, fuzz_payload(data,sizeof(data)));
-    printf("payload: %s\n",payload);
-    return 0;
-}*/
+/* =====================================================================================
+ *
+ *       function: sizeofstring()
+ *
+ *         return: int
+ *
+ *       Parameters:
+ *               char *data - data to count
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Find the size of the string
+ *
+ * ====================================================================================*/
 
 int sizeofstring(char *data){
     int size = 0;
@@ -25,6 +23,24 @@ int sizeofstring(char *data){
     return size;
 }
 
+
+/* =====================================================================================
+ *
+ *       function: search()
+ *
+ *         return: bool
+ *
+ *       Parameters:
+ *               char *data - data
+ *               char *query - string to look for
+ *               int length - length of the data
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Search for a specific string in the payload
+ *
+ * ====================================================================================*/
 bool search(char *data, char *query,int length){
     int size;
     bool found = false;
@@ -48,6 +64,22 @@ bool search(char *data, char *query,int length){
     return found;
 }
 
+
+/* =====================================================================================
+ *
+ *       function: set_fuzz_ratio()
+ *
+ *         return: int
+ *
+ *       Parameters:
+ *               double ratio - value to fuzz
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Set the fuzzing ratio
+ *
+ * ====================================================================================*/
 int set_fuzz_ratio(double ratio){
     fuzz_ratio = ratio;
     return ratio;
@@ -60,6 +92,23 @@ int set_fuzz_ratio(double ratio){
     return data;
 }*/
 
+
+/* =====================================================================================
+ *
+ *       function: fuzz_payload()
+ *
+ *         return: char *
+ *
+ *       Parameters:
+ *               cahr * data - data
+ *               int length - length of data
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Fuzz the payload
+ *
+ * ====================================================================================*/
 char *fuzz_payload(char *data, int length){
     int random;
     int size = sizeofstring(data);

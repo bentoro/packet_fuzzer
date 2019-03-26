@@ -1,6 +1,19 @@
 
 #include "raw_socket_wrappers.h"
 
+/* =====================================================================================
+ *
+ *       function: resolve_host
+ *
+ *         return: char *
+ *
+ *       Parameters:
+ *                  char *target - target machine
+ *                  struct addrinfo hints -  hints
+ *       Notes:
+ *              Gets the host
+ *
+ * ====================================================================================*/
 char *resolve_host(char *target, struct addrinfo hints) {
   int status;
   void *tmp;
@@ -24,19 +37,19 @@ char *resolve_host(char *target, struct addrinfo hints) {
   freeaddrinfo(res);
   return dst_ip;
 }
-/*
-// TODO: add to seperate library once working!
-struct addrinfo set_hints(int family, int socktype, int flags) {
-  struct addrinfo hints;
-  memset(&hints, 0, sizeof(hints));
 
-  hints.ai_family = family;     // IPV4
-  hints.ai_socktype = socktype; // TCP
-  hints.ai_flags = flags;
-
-  return hints;
-}*/
-
+/* =====================================================================================
+ *
+ *       function: search_interface
+ *
+ *         return: struct ifreq
+ *
+ *       Parameters:
+ *                  char *ifc - interface
+ *       Notes:
+ *              search for the interface for the socket
+ *
+ * ====================================================================================*/
 struct ifreq search_interface(char *ifc) {
   // dont need to return socket as it is only used to search for the interface
   char *interface = (char *)malloc(40 * sizeof(char));
@@ -70,7 +83,19 @@ struct ifreq search_interface(char *ifc) {
   return ifr;
 }
 
-// Computing the internet checksum (RFC 1071).
+/* =====================================================================================
+ *
+ *       function: checksum
+ *
+ *         return: uint16_t
+ *
+ *       Parameters:
+ *                  uint16_t *addr - address
+ *                  int len - length of the packet
+ *       Notes:
+ *              Calculate the checksum value
+ *
+ * ====================================================================================*/
 uint16_t checksum(uint16_t *addr, int len) {
   int count = len;
   register uint32_t sum = 0;
@@ -93,7 +118,25 @@ uint16_t checksum(uint16_t *addr, int len) {
 
   return (answer);
 }
-//  P.D. Buchan (pdbuchan@yahoo.com)
+/* =====================================================================================
+ *
+ *       function: tcp4_checksum
+ *
+ *         return: uint16_t
+ *
+ *       Parameters:
+ *                  struct ip iphdr - ip header
+ *                  struct tcphdr tcphdr - tcp header
+ *                  uint8_t *payload - payload
+ *                  int payloadlen - length of payload
+ *                  int len - length of the packet
+ *
+ *       Author: P.D. Buchan
+ *
+ *       Notes:
+ *              Calculate the checksum value
+ *
+ * ====================================================================================*/
 uint16_t tcp4_checksum(struct ip iphdr, struct tcphdr tcphdr, uint8_t *payload,int payloadlen) {
   uint16_t svalue;
   char buf[IP_MAXPACKET], cvalue;
@@ -195,8 +238,25 @@ uint16_t tcp4_checksum(struct ip iphdr, struct tcphdr tcphdr, uint8_t *payload,i
 
   return checksum((uint16_t *)buf, chksumlen);
 }
-
-//  P.D. Buchan (pdbuchan@yahoo.com)
+/* =====================================================================================
+ *
+ *       function: udp4_checksum
+ *
+ *         return: uint16_t
+ *
+ *       Parameters:
+ *                  struct ip iphdr - ip header
+ *                  struct udphdr udphdr - udp header
+ *                  uint8_t *payload - payload
+ *                  int payloadlen - length of payload
+ *                  int len - length of the packet
+ *
+ *       Author: P.D. Buchan
+ *
+ *       Notes:
+ *              Calculate the checksum value
+ *
+ * ====================================================================================*/
 uint16_t udp4_checksum(struct ip iphdr, struct udphdr udphdr, uint8_t *payload,int payloadlen) {
   char buf[IP_MAXPACKET];
   char *ptr;
@@ -268,7 +328,25 @@ uint16_t udp4_checksum(struct ip iphdr, struct udphdr udphdr, uint8_t *payload,i
   return checksum((uint16_t *)buf, chksumlen);
 }
 
-//  P.D. Buchan (pdbuchan@yahoo.com)
+/* =====================================================================================
+ *
+ *       function: icmp4_checksum
+ *
+ *         return: uint16_t
+ *
+ *       Parameters:
+ *                  struct ip iphdr - ip header
+ *                  struct icmp icmphdr - icmp header
+ *                  uint8_t *payload - payload
+ *                  int payloadlen - length of payload
+ *                  int len - length of the packet
+ *
+ *       Author: P.D. Buchan
+ *
+ *       Notes:
+ *              Calculate the checksum value
+ *
+ * ====================================================================================*/
 uint16_t icmp4_checksum(struct icmp icmphdr, uint8_t *payload, int payloadlen) {
   char buf[IP_MAXPACKET];
   char *ptr;
@@ -320,6 +398,24 @@ uint16_t icmp4_checksum(struct icmp icmphdr, uint8_t *payload, int payloadlen) {
   return checksum((uint16_t *)buf, chksumlen);
 }
 
+
+/* =====================================================================================
+ *
+ *       function: send_raw_icmp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *                  struct ip iphdr - ip header
+ *                  struct icmp icmphdr - icmp header
+ *                  char *data - payload
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Send a raw ICMP packet
+ *
+ * ====================================================================================*/
 void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
   int payloadlen = 0, sd;
   struct sockaddr_in sin;
@@ -430,6 +526,25 @@ void send_raw_icmp_packet(struct ip iphdr, struct icmp icmphdr,char *data) {
 
   close(sd);
 }
+
+
+/* =====================================================================================
+ *
+ *       function: send_raw_udp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *                  struct ip iphdr - ip header
+ *                  struct udphdr udphdr - udp header
+ *                  char *data - payload
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Send a raw UDP packet
+ *
+ * ====================================================================================*/
 void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
   struct sockaddr_in sin;
   struct udp_packet packet;
@@ -525,6 +640,23 @@ void send_raw_udp_packet(struct ip ip, struct udphdr udp, char *data) {
 }
 
 
+/* =====================================================================================
+ *
+ *       function: send_raw_tcp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *                  struct ip iphdr - ip header
+ *                  struct tcphdr tcp - tcp header
+ *                  char *data - payload
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Send a raw TCP packet
+ *
+ * ====================================================================================*/
 void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
   int sending_socket, payloadlen = 0;
   const int on = 1;
@@ -548,14 +680,14 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
       packet.iphdr.ip_len =htons(generate_rand(65535)); // length: IP header + TCP header
       if(debug){
           printf("FUZZ\n");
-          printf("len: %i",packet.iphdr.ip_len);
+          printf("len: %i",ntohs(packet.iphdr.ip_len));
       }
   }
   if(packet.iphdr.ip_id == 1339){
       packet.iphdr.ip_id = htons(generate_rand(65535));             // ID
       if(debug){
           printf("FUZZ\n");
-          printf("id: %i",packet.iphdr.ip_len);
+          printf("id: %i",ntohs(packet.iphdr.ip_id));
       }
   }
   if(packet.iphdr.ip_ttl == (unsigned char)1339){
@@ -648,6 +780,31 @@ void send_raw_tcp_packet(struct ip ip, struct tcphdr tcp,char *data) {
   close(sending_socket);
 }
 
+/* =====================================================================================
+ *
+ *       function: build_ip_header
+ *
+ *         return: struct ip
+ *
+ *       Parameters:
+ *                  int IHL - IHL
+ *                  int version -version
+ *                  int tos - tos
+ *                  int len - length
+ *                  int id - len
+ *                  int flag1 - flag1
+ *                  int flag2 - flag2
+ *                  int flag3 - flag3
+ *                  int flag4 - flag4
+ *                  int ttl - ttl
+ *                  int flag - flag
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Build IP Packet
+ *
+ * ====================================================================================*/
 struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int flag1, int flag2, int flag3, int flag4, int ttl, int flag) {
   int status;
   int *ip_flags = (int *)calloc(4, sizeof(int));
@@ -707,6 +864,27 @@ struct ip build_ip_header(int IHL, int version, int tos, int len, int id, int fl
   return iphdr;
 }
 
+/* =====================================================================================
+ *
+ *       function: build_tcp_header
+ *
+ *         return: struct tcphdr
+ *
+ *       Parameters:
+ *               int seq - seq
+ *               int ack - ack
+ *               int reserved - reserved
+ *               int offset - offset
+ *               int flags - flags
+ *               int window_size - window size
+ *               int urgent - urgent
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Build TCP Packet
+ *
+ * ====================================================================================*/
 struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int flags, int window_size, int urgent) {
   int *tcp_flags;
   struct tcphdr tcphdr;
@@ -803,6 +981,22 @@ struct tcphdr build_tcp_header(int seq, int ack, int reserved, int offset,int fl
   return tcphdr;
 }
 
+
+/* =====================================================================================
+ *
+ *       function: build_udp_header
+ *
+ *         return: struct udphdr
+ *
+ *       Parameters:
+ *               int len - length
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Build UDP Packet
+ *
+ * ====================================================================================*/
 struct udphdr build_udp_header(int len) {
   struct udphdr udphdr;
   udphdr.source = htons(src_port);
@@ -818,6 +1012,25 @@ struct udphdr build_udp_header(int len) {
   return udphdr;
 }
 
+
+/* =====================================================================================
+ *
+ *       function: build_icmp_header
+ *
+ *         return: struct icmphdr
+ *
+ *       Parameters:
+ *               int type - type
+ *               int code - code
+ *               int id - id
+ *               int seq - sequence number
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Build ICMP Packet
+ *
+ * ====================================================================================*/
 struct icmp build_icmp_header(int type, int code, int id, int seq) {
   struct icmp icmphdr;
   //ICMP_ECHO
@@ -846,25 +1059,106 @@ struct icmp build_icmp_header(int type, int code, int id, int seq) {
 }
 
 
+/* =====================================================================================
+ *
+ *       function: print_raw_ip_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct ip ip - ip struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw IP Packet
+ *
+ * ====================================================================================*/
 void print_raw_ip_packet(struct ip ip){
    print_time();
    printf(" %02x %02x %02x %i %02x %02x %i %02x %s %s %02x\n",ip.ip_hl,ip.ip_v, ip.ip_tos, ntohs(ip.ip_len), ip.ip_id, ip.ip_off, ip.ip_ttl,ip.ip_p, src_ip, dst_ip, ip.ip_sum);
 }
+
+/* =====================================================================================
+ *
+ *       function: print_raw_tcp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct tcphdr tcphdr - tcp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw tcp Packet
+ *
+ * ====================================================================================*/
 void print_raw_tcp_packet(struct tcphdr tcphdr){
    print_time();
    printf(" %i %i %02x %i %02x %02x %02x %i %02x\n",src_port, dst_port,ntohl(tcphdr.th_seq), ntohl(tcphdr.th_ack),tcphdr.th_x2,tcphdr.th_off,tcphdr.th_flags, ntohs(tcphdr.th_win), ntohs(tcphdr.th_urp));
 
 }
+
+
+/* =====================================================================================
+ *
+ *       function: print_raw_udp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct tcphdr udphdr - udp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw udp Packet
+ *
+ * ====================================================================================*/
 void print_raw_udp_packet(struct udphdr udphdr){
    print_time();
    printf(" %i %i %i\n",src_port, dst_port,ntohs(udphdr.len));
 
 }
+
+
+/* =====================================================================================
+ *
+ *       function: print_raw_udp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct tcphdr udphdr - udp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw udp Packet
+ *
+ * ====================================================================================*/
 void print_raw_icmp_packet(struct icmp icmp){
    print_time();
    printf(" %i %i %i %i\n",icmp.icmp_type, icmp.icmp_code,ntohs(icmp.icmp_id), ntohs(icmp.icmp_seq));
 
 }
+
+/* =====================================================================================
+ *
+ *       function: print_raw_udp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct tcphdr udphdr - udp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw udp Packet
+ *
+ * ====================================================================================*/
 
 void print_tcp_packet(struct tcp_packet tcp){
     print_raw_ip_packet(tcp.iphdr);
@@ -874,6 +1168,21 @@ void print_tcp_packet(struct tcp_packet tcp){
 }
 
 
+/* =====================================================================================
+ *
+ *       function: print_raw_udp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct tcphdr udphdr - udp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw udp Packet
+ *
+ * ====================================================================================*/
 void print_udp_packet(struct udp_packet udp){
     print_raw_ip_packet(udp.iphdr);
     print_raw_udp_packet(udp.udphdr);
@@ -882,6 +1191,21 @@ void print_udp_packet(struct udp_packet udp){
 }
 
 
+/* =====================================================================================
+ *
+ *       function: print_raw_icmp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct icm_packet icmp - icmp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw icmp Packet
+ *
+ * ====================================================================================*/
 void print_icmp_packet(struct icmp_packet icmp){
     print_raw_ip_packet(icmp.iphdr);
     print_raw_icmp_packet(icmp.icmphdr);
@@ -889,32 +1213,130 @@ void print_icmp_packet(struct icmp_packet icmp){
     printf(" Payload: %s\n",icmp.payload);
 }
 
+
+/* =====================================================================================
+ *
+ *       function: log_print_time()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Print the current time
+ *
+ * ====================================================================================*/
 void log_print_time() {
     time_t t = time(NULL);
     struct tm tm = * localtime( & t);
     fprintf(log_file,"[%d-%d-%d %d:%d:%d] ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
+
+/* =====================================================================================
+ *
+ *       function: log_print_raw_ip_packet()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct ip ip - udp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print ip packet to log file
+ *
+ * ====================================================================================*/
 void log_print_raw_ip_packet(struct ip ip) {
     log_print_time();
     fprintf(log_file," %02x %02x %02x %i %02x %02x %i %02x %s %s %02x\n", ip.ip_hl, ip.ip_v, ip.ip_tos, ntohs(ip.ip_len), ip.ip_id, ip.ip_off, ip.ip_ttl, ip.ip_p, src_ip, dst_ip, ip.ip_sum);
 }
+
+
+/* =====================================================================================
+ *
+ *       function: log_print_raw_tcp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct tcphdr tcphdr - tcp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw tcp Packet to log file
+ *
+ * ====================================================================================*/
 void log_print_raw_tcp_packet(struct tcphdr tcphdr) {
     log_print_time();
     fprintf(log_file, " %i %i %02x %i %02x %02x %02x %i %02x\n", src_port, dst_port, ntohl(tcphdr.th_seq), ntohl(tcphdr.th_ack), tcphdr.th_x2, tcphdr.th_off, tcphdr.th_flags, ntohs(tcphdr.th_win), ntohs(tcphdr.th_urp));
 
 }
+
+
+/* =====================================================================================
+ *
+ *       function: log_print_raw_udp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct udphdr udphdr - udp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw udp Packet to log file
+ *
+ * ====================================================================================*/
 void log_print_raw_udp_packet(struct udphdr udphdr) {
     log_print_time();
     fprintf(log_file," %i %i %i\n", src_port, dst_port, ntohs(udphdr.len));
 
 }
+
+
+/* =====================================================================================
+ *
+ *       function: print_raw_icmp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct icmp icmp - icmp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw icmp Packet to log file
+ *
+ * ====================================================================================*/
 void log_print_raw_icmp_packet(struct icmp icmp) {
     log_print_time();
     fprintf(log_file," %i %i %i %i\n", icmp.icmp_type, icmp.icmp_code, ntohs(icmp.icmp_id), ntohs(icmp.icmp_seq));
 
 }
 
+
+/* =====================================================================================
+ *
+ *       function: print_raw_tcp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct tcphdr tcphdr - tcp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw tcp Packet to log file
+ *
+ * ====================================================================================*/
 void log_print_tcp_packet(struct tcp_packet tcp) {
     log_print_raw_ip_packet(tcp.iphdr);
     log_print_raw_tcp_packet(tcp.tcphdr);
@@ -922,6 +1344,22 @@ void log_print_tcp_packet(struct tcp_packet tcp) {
     fprintf(log_file," Payload: %s\n", tcp.payload);
 }
 
+
+/* =====================================================================================
+ *
+ *       function: log_print_raw_udp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct tcphdr udphdr - udp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw udp Packet to log file
+ *
+ * ====================================================================================*/
 void log_print_udp_packet(struct udp_packet udp) {
     log_print_raw_ip_packet(udp.iphdr);
     log_print_raw_udp_packet(udp.udphdr);
@@ -929,6 +1367,22 @@ void log_print_udp_packet(struct udp_packet udp) {
     fprintf(log_file," Payload: %s\n", udp.payload);
 }
 
+
+/* =====================================================================================
+ *
+ *       function: log_print_raw_icmp_packet
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct icmp_paacket icmp - icmp struct packet
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              print raw icmp Packet to log file
+ *
+ * ====================================================================================*/
 void log_print_icmp_packet(struct icmp_packet icmp) {
     log_print_raw_ip_packet(icmp.iphdr);
     log_print_raw_icmp_packet(icmp.icmphdr);
@@ -936,10 +1390,42 @@ void log_print_icmp_packet(struct icmp_packet icmp) {
     fprintf(log_file," Payload: %s\n", icmp.payload);
 }
 
+
+/* =====================================================================================
+ *
+ *       function: generate_rand()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               double value - value to set random
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Generate a random value
+ *
+ * ====================================================================================*/
 int generate_rand(double value) {
   return (int)(rand() % (int)value);
 }
 
+
+/* =====================================================================================
+ *
+ *       function: send_raw_syn_packet()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               int sending_socket - sending socket
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Send a tcp raw syn packet
+ *
+ * ====================================================================================*/
 void send_raw_syn_packet(int sending_socket){
     struct sockaddr_in tcpclient; //for receiving icmp packets
     socklen_t len; //for sending normal udp packets
@@ -957,6 +1443,22 @@ void send_raw_syn_packet(int sending_socket){
     }*/
 }
 
+
+/* =====================================================================================
+ *
+ *       function: send_raw_fin_packet()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               int sending_socket - sending socket
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Send a tcp raw inn packet
+ *
+ * ====================================================================================*/
 void send_raw_fin_packet(int sending_socket){
     struct sockaddr_in tcpclient; //for receiving icmp packets
     socklen_t len; //for sending normal udp packets
@@ -975,6 +1477,21 @@ void send_raw_fin_packet(int sending_socket){
     }
 }
 
+
+/* =====================================================================================
+ *
+ *       function: start_icmp_client()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Start icmp client
+ *
+ * ====================================================================================*/
 int start_icmp_client(){
     int sending_socket;
 
@@ -985,6 +1502,21 @@ int start_icmp_client(){
 	return sending_socket;
 }
 
+
+/* =====================================================================================
+ *
+ *       function: start_tcp_raw_client()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Start tcp raw client
+ *
+ * ====================================================================================*/
 int start_tcp_raw_client(){
     int sending_socket;
 
@@ -996,6 +1528,21 @@ int start_tcp_raw_client(){
 }
 
 
+/* =====================================================================================
+ *
+ *       function: recv_icmp_packet()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               void *packet - raw packet bytes
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              ICMP receive loop
+ *
+ * ====================================================================================*/
 char *recv_icmp_packet(void *packet){
   time_t t = time(NULL);
   struct tm tm = * localtime( & t);
@@ -1034,6 +1581,21 @@ char *recv_icmp_packet(void *packet){
 }
 
 
+/* =====================================================================================
+ *
+ *       function: recv_tcp_packet()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               void *packet - raw packet bytes
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              TCP receive loop
+ *
+ * ====================================================================================*/
 char *recv_tcp_packet(void *packet){
   time_t t = time(NULL);
   struct tm tm = * localtime( & t);

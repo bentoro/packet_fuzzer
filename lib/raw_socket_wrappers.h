@@ -37,6 +37,19 @@
 #define ICMP 9
 
 
+/* =====================================================================================
+ *
+ *       Filename:  raw_socket_wrappers.h
+ *
+ *        Version:  1.0
+ *        Created:  04/26/2019
+ *       Revision:  none
+ *       Compiler:  gcc
+ *
+ *         Author:  Benedict Lo
+ *
+ * ====================================================================================*/
+
 struct tcp_packet {
   struct ip iphdr;
   struct tcphdr tcphdr;

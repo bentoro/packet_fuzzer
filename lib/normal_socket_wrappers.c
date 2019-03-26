@@ -1,5 +1,20 @@
 #include "normal_socket_wrappers.h"
 
+
+/* =====================================================================================
+ *
+ *       function: *get_in_addr()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               struct sockaddr *sa - source
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Get in_addr
+ *
+ * ====================================================================================*/
 void *get_in_addr(struct sockaddr *sa) {
   if (sa->sa_family == AF_INET) {
     return &(((struct sockaddr_in *)sa)->sin_addr);
@@ -7,6 +22,7 @@ void *get_in_addr(struct sockaddr *sa) {
 
   return &(((struct sockaddr_in6 *)sa)->sin6_addr);
 }
+
 
 void sig_handler(int s) {
   int saved_errno = errno;
@@ -45,9 +61,22 @@ struct addrinfo set_hints(int family, int socktype, int flags) {
   return hints;
 }
 
-// node is the hostname to connect to
-// service is the port number
-// hints points to a addrinfo struct
+/* =====================================================================================
+ *
+ *       function: set_addr_info()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               const char *address - address
+ *               const char *port - port
+ *               struct addrinfo hints - hints
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Get the address info
+ *
+ * ====================================================================================*/
 struct addrinfo set_addr_info(const char *address, const char *port,struct addrinfo hints) {
   int status;
   struct addrinfo *servinfo;
@@ -70,6 +99,22 @@ int set_bind(int fd, struct addrinfo *p) {
   return r;
 }
 
+
+/* =====================================================================================
+ *
+ *       function: set_listen()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               int fd - file descriptor
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              set socket to listen
+ *
+ * ====================================================================================*/
 void set_listen(int fd) {
   if ((listen(fd, MAXCONNECTION)) == -1) {
     perror("listen");
@@ -77,6 +122,22 @@ void set_listen(int fd) {
   }
 }
 
+
+/* =====================================================================================
+ *
+ *       function: start_udp_server()
+ *
+ *         return: int
+ *
+ *       Parameters:
+ *               int PORT- port
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Start the udp server
+ *
+ * ====================================================================================*/
 int start_udp_server(int PORT){
 	int sock, optval = 1;
 	struct sockaddr_in server_address;
@@ -98,6 +159,23 @@ int start_udp_server(int PORT){
 	return sock;
 }
 
+
+/* =====================================================================================
+ *
+ *       function: start_tcp_server()
+ *
+ *         return: int
+ *
+ *       Parameters:
+ *               char *address - address
+ *               char *PORT- port
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Start the tcp server
+ *
+ * ====================================================================================*/
 int start_tcp_client(char *address, char *port){
   int sockfd;
   struct addrinfo *servinfo, *p, hints;
@@ -137,6 +215,23 @@ int start_tcp_client(char *address, char *port){
   return(sockfd);
 }
 
+
+/* =====================================================================================
+ *
+ *       function: start_udp_server()
+ *
+ *         return: int
+ *
+ *       Parameters:
+ *               char *address - address
+ *               char *PORT- port
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              Start the udp server
+ *
+ * ====================================================================================*/
 int start_udp_client(char *address, char *port){
   int sockfd;
   struct addrinfo *servinfo, *p, hints;
@@ -169,6 +264,26 @@ int start_udp_client(char *address, char *port){
   return(sockfd);
 }
 
+
+/* =====================================================================================
+ *
+ *       function: make_connect()
+ *
+ *         return: int
+ *
+ *       Parameters:
+ *               char *address - address
+ *               char *PORT- port
+ *               int family - family
+ *               int socktype - socktype
+ *               int flags -flas
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              make and connect to the server
+ *
+ * ====================================================================================*/
 int make_connect(const char *address, const char *port, int family, int socktype, int flags) {
   struct addrinfo hints;
   struct addrinfo *servinfo;
@@ -213,6 +328,21 @@ int make_connect(const char *address, const char *port, int family, int socktype
   return fd;
 }
 
+/* =====================================================================================
+ *
+ *       function: make_bind()
+ *
+ *         return: int
+ *
+ *       Parameters:
+ *               char *PORT- port
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *              make and bind to the server
+ *
+ * ====================================================================================*/
 int make_bind(const char *port) {
   struct addrinfo hints;
   struct addrinfo *servinfo;
@@ -264,6 +394,24 @@ int Accept(int fd, struct sockaddr_storage *addr) {
   return r;
 }
 
+
+/* =====================================================================================
+ *
+ *       function: send_normal_tcp_packet()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               int sending_socket - sending socket
+ *               char *data - data
+ *               int length length
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *               send a normal tcp packet
+ *
+ * ====================================================================================*/
 void send_normal_tcp_packet(int sending_socket, char *data, int length) {
   int total = 0;
   int bytes_left = length;
@@ -278,6 +426,26 @@ void send_normal_tcp_packet(int sending_socket, char *data, int length) {
   }
 }
 
+
+/* =====================================================================================
+ *
+ *       function: send_normal_udp_packet()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               int sending_socket - sending socket
+ *               char *data - data
+ *               int length length
+ *               const struct sockaddr *dest_addr - sockaddr
+ *               socklen_t dest_len - length of the address
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *               send a normal udp packet
+ *
+ * ====================================================================================*/
 void send_normal_udp_packet(int sending_socket, char *data, int length,const struct sockaddr *dest_addr,socklen_t dest_len) {
   int total = 0;
   int bytes_left = length;
@@ -292,6 +460,24 @@ void send_normal_udp_packet(int sending_socket, char *data, int length,const str
   }
 }
 
+
+/* =====================================================================================
+ *
+ *       function: recv_normal_tcp_packet()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               int socket - sending socket
+ *               char *buf - data
+ *               size_t bufsize - size of the buffer
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *               receive normal tcp packet
+ *
+ * ====================================================================================*/
 void recv_normal_tcp_packet(int socket, char *buf, size_t bufsize) {
   int bytes_receieved, bytes_to_read;
   bytes_to_read = bufsize;
@@ -303,6 +489,26 @@ void recv_normal_tcp_packet(int socket, char *buf, size_t bufsize) {
   }
 }
 
+
+/* =====================================================================================
+ *
+ *       function: recv_normal_udp_packet()
+ *
+ *         return: void
+ *
+ *       Parameters:
+ *               int socket - sending socket
+ *               char *buf - data
+ *               size_t bufsize - size of the buffer
+ *               struct sockaddr *client - client
+ *               socklen_t client_addr_len - length of the client adddress
+ *
+ *       Author: Benedict Lo
+ *
+ *       Notes:
+ *               receive normal udp packet
+ *
+ * ====================================================================================*/
 void recv_normal_udp_packet(int socket, char *buf, size_t bufsize,struct sockaddr *client,socklen_t client_addr_len) {
   int bytes_receieved, bytes_to_read;
   bytes_to_read = bufsize;

@@ -1,4 +1,20 @@
 #include "main.h"
+/*
+ * =====================================================================================
+ *
+ *       Filename:  main.c
+ *
+ *    Description:  Main config parsing loop and feedback algorithm
+ *
+ *        Version:  1.0
+ *        Created:  03/24/2019
+ *       Revision:  none
+ *       Compiler:  gcc
+ *
+ *         Author:  Benedict Lo
+ *
+ * =====================================================================================
+ */
 
 int main(int argc, char **argv) {
   //initilize the seed as the current time
@@ -93,7 +109,7 @@ int main(int argc, char **argv) {
             print_time();
             printf(" Total # of testcaes: %i\n", atoi(optarg));
             log_print_time();
-            fprintf(log_file," Total # of testcaes: %i\n\n", atoi(optarg));
+            fprintf(log_file," Total # of testcaes: %i\n", atoi(optarg));
             break;
         case 'x':
             // Interface to send packet through.
@@ -121,7 +137,7 @@ int main(int argc, char **argv) {
         }
     }
 
-  total_testcases = 5;
+  total_testcases = 1;
   set_fuzz_ratio(0.60);
   debug = true;
 
@@ -348,9 +364,9 @@ replaypacket:
                       }
                       memset(receieved_data, '\0', sizeof(receieved_data));
                   } else {
+                      send_raw_tcp_packet(tcp_packets[0].iphdr, tcp_packets[0].tcphdr, tcp_packets[0].payload);
                       print_tcp_packet(tcp_packets[size]);
                       log_print_tcp_packet(tcp_packets[size]);
-                      send_raw_tcp_packet(tcp_packets[0].iphdr, tcp_packets[0].tcphdr, tcp_packets[0].payload);
                       pshack_flag = false;
                       while(pshack_flag == false){
                           if(recvfrom(sending_socket, packet_buffer, sizeof(packet_buffer), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
@@ -415,9 +431,9 @@ replaypacket:
                       }
                       memset(receieved_data, '\0', sizeof(receieved_data));
                   } else {
+                      send_raw_udp_packet(udp_packets[0].iphdr, udp_packets[0].udphdr, udp_packets[0].payload);
                       print_udp_packet(udp_packets[0]);
                       log_print_udp_packet(udp_packets[0]);
-                      send_raw_udp_packet(udp_packets[0].iphdr, udp_packets[0].udphdr, udp_packets[0].payload);
                       memset(receieved_data,'\0', sizeof(receieved_data));
                       bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
                       print_time();
@@ -445,9 +461,9 @@ replaypacket:
                   printf(" ICMP Packet sent to %s\n", target);
                   log_print_time();
                   fprintf(log_file," ICMP Packet sent to %s\n", target);
+                  send_raw_icmp_packet(icmp_packets[0].iphdr, icmp_packets[0].icmphdr, icmp_packets[0].payload);
                   print_icmp_packet(icmp_packets[0]);
                   log_print_icmp_packet(icmp_packets[0]);
-                  send_raw_icmp_packet(icmp_packets[0].iphdr, icmp_packets[0].icmphdr, icmp_packets[0].payload);
                   memset(receieved_data,'\0', sizeof(receieved_data));
                   if(recvfrom(sending_socket, receieved_data, sizeof(receieved_data), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
                         perror("recvfrom");
@@ -555,6 +571,7 @@ replaypacket1:
                   }
                   send_raw_tcp_packet(tcp_packets[current].iphdr, tcp_packets[current].tcphdr, tcp_packets[current].payload);
                   print_tcp_packet(tcp_packets[current]);
+                  log_print_tcp_packet(tcp_packets[current]);
                   pshack_flag = false;
                   while(pshack_flag == false){
                       if(recvfrom(sending_socket, packet_buffer, sizeof(packet_buffer), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
@@ -620,9 +637,9 @@ replaypacket1:
                   }
                   memset(receieved_data, '\0', sizeof(receieved_data));
               } else {
+                  send_raw_udp_packet(udp_packets[current].iphdr, udp_packets[current].udphdr, udp_packets[current].payload);
                   print_time();
                   print_udp_packet(udp_packets[current]);
-                  send_raw_udp_packet(udp_packets[current].iphdr, udp_packets[current].udphdr, udp_packets[current].payload);
                   bytes_receieved = recvfrom(sending_socket, receieved_data, sizeof(receieved_data),0,(struct sockaddr *)&client, &client_addr_len);
                   print_time();
                   printf(" Received: %s \n\n", receieved_data);
@@ -657,9 +674,9 @@ replaypacket1:
                 }
               }
               strcpy(icmp_packets[current].payload,fuzz_payload(icmp_packets[current].payload,sizeof(icmp_packets[current].payload)));
+              send_raw_icmp_packet(icmp_packets[current].iphdr, icmp_packets[current].icmphdr, icmp_packets[current].payload);
               print_icmp_packet(icmp_packets[current]);
               log_print_icmp_packet(icmp_packets[current]);
-              send_raw_icmp_packet(icmp_packets[current].iphdr, icmp_packets[current].icmphdr, icmp_packets[current].payload);
               memset(receieved_data,'\0', sizeof(receieved_data));
               if(recvfrom(sending_socket, receieved_data, sizeof(receieved_data), 0, (struct sockaddr*)&rawclient, &client_addr_len) < 0){
                     perror("recvfrom");
