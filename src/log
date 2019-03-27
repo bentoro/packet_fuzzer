@@ -1,61 +1,81 @@
-[2019-3-26 12:54:10] Configuration Summary
-[2019-3-26 12:54:10]  Source IP: 192.168.1.73
-[2019-3-26 12:54:10]  Destination IP: 192.168.1.75
-[2019-3-26 12:54:10]  Source port: 100
-[2019-3-26 12:54:10]  Protocol: TCP
-[2019-3-26 12:54:10]  Raw sockets: True
-[2019-3-26 12:54:10]  Total # of testcases: 3
-[2019-3-26 12:54:10]  String to search: this is a test
-[2019-3-26 12:54:10] Number of user defined test cases: 1 
-[2019-3-26 12:54:10]  Allocated room for TCP packet
+[2019-3-26 22:49:30] Configuration Summary
+[2019-3-26 22:49:30]  Source IP: 192.168.1.73
+[2019-3-26 22:49:30]  Destination IP: 192.168.1.75
+[2019-3-26 22:49:30]  Source port: 100
+[2019-3-26 22:49:30]  Raw sockets: True
+[2019-3-26 22:49:30]  Protocol: TCP
+[2019-3-26 22:49:30] Interface: wlp2s0
+[2019-3-26 22:49:30]  Total # of testcases: 3
+[2019-3-26 22:49:30]  String to search: correct
+[2019-3-26 22:49:30] Number of user defined test cases: 1 
+[2019-3-26 22:49:30]  Allocated room for TCP packet
 
-[2019-3-26 12:54:11]  Test case #1 
-[2019-3-26 12:54:11]  IP Header filled 
-[2019-3-26 12:54:11]  TCP Header filled 
-[2019-3-26 12:54:11]  TCP Payload filled 
-[2019-3-26 12:54:11]  TCP Packet sent to 192.168.1.75
-[2019-3-26 12:54:11]  00 00 00 0 00 00 0 00 192.168.1.73 192.168.1.75 00
-[2019-3-26 12:54:11]  100 8045 00 0 00 00 00 0 00
-[2019-3-26 12:54:11]  Payload: 
-[2019-3-26 12:54:11]  Received reply from 192.168.1.75 
+[2019-3-26 22:49:30]  Test case #1 
+[2019-3-26 22:49:30]  IP Header filled 
+[2019-3-26 22:49:30]  TCP Header filled 
+[2019-3-26 22:49:30]  TCP Payload filled 
+[2019-3-26 22:49:30]  TCP Packet sent to 192.168.1.75
+[2019-3-26 22:49:30]  00 00 00 0 00 00 0 00 192.168.1.73 192.168.1.75 00
+[2019-3-26 22:49:30]  100 8045 00 0 00 00 00 0 00
+[2019-3-26 22:49:30]  Payload: 
+[2019-3-26 22:49:30]  Received reply from 192.168.1.75 
 
-[2019-3-26 12:54:11]  Test case #2 
-[2019-3-26 12:54:11]  TCP Packet filled 
-[2019-3-26 12:54:11]  05 04 00 40 00 00 255 06 192.168.1.73 192.168.1.75 eb36
-[2019-3-26 12:54:11]  100 8045 16263482 1613542531 00 05 18 64240 00
-[2019-3-26 12:54:11]  Payload: tí Iti   êt òt
+[2019-3-26 22:49:31]  Test case #2 
+[2019-3-26 22:49:31]  TCP Packet filled 
+[2019-3-26 22:49:31]  05 04 00 28 00 00 255 06 192.168.1.73 192.168.1.75 f736
+[2019-3-26 22:49:31]  100 8045 3f1bb6f0 -1661721881 00 05 18 64240 00
+[2019-3-26 22:49:31]  Payload: t uù  s'   wò 
+ Received reply from 192.168.1.75 
+ Received reply from 192.168.1.75 
+ Received reply from 192.168.1.75 
+ Received reply from 192.168.1.75 
+ Received reply from 192.168.1.75 
+ Received reply from 192.168.1.75 
+ Received reply from 192.168.1.75 
+ Received reply from 192.168.1.75 
+ Received reply from 192.168.1.75 
  Received reply from 192.168.1.75 
 
-[2019-3-26 12:54:12]  Test case #3 
-[2019-3-26 12:54:12]  TCP Packet filled 
-[2019-3-26 12:54:12]  05 04 00 40 00 00 255 06 192.168.1.73 192.168.1.75 eb36
-[2019-3-26 12:54:12]  100 8045 16263490 1613542571 00 05 18 64240 00
-[2019-3-26 12:54:12]  Payload:  í  ëi ñaê  ò.
+[2019-3-26 22:49:31]  Test case #3 
+[2019-3-26 22:49:31]  TCP Packet filled 
+[2019-3-26 22:49:31]  05 04 00 28 00 00 255 06 192.168.1.73 192.168.1.75 f736
+[2019-3-26 22:49:31]  100 8045 3f1bb6fe -1661721841 00 05 18 64240 00
+[2019-3-26 22:49:31]  Payload: tu=ùÅ 7     ò 
  Received reply from 192.168.1.75 
 
-[2019-3-26 13:3:7] Configuration Summary
-[2019-3-26 13:3:7]  Source IP: 192.168.1.73
-[2019-3-26 13:3:7]  Destination IP: 192.168.1.75
-[2019-3-26 13:3:7]  Source port: 100
-[2019-3-26 13:3:7]  Protocol: UDP
-[2019-3-26 13:3:7] Interface: wlp2s0
-[2019-3-26 13:3:7]  Total # of testcases: 3
-[2019-3-26 13:3:7]  String to search: correct
-[2019-3-26 13:3:7]  Allocated room for UDP packet
+[2019-3-26 22:51:51] Configuration Summary
+[2019-3-26 22:51:51]  Source IP: 192.168.1.73
+[2019-3-26 22:51:51]  Destination IP: 192.168.1.75
+[2019-3-26 22:51:51]  Source port: 100
+[2019-3-26 22:51:51]  Raw sockets: True
+[2019-3-26 22:51:51]  Protocol: TCP
+[2019-3-26 22:51:51] Interface: wlp2s0
+[2019-3-26 22:51:51]  Total # of testcases: 3
+[2019-3-26 22:51:51]  String to search: correct
+[2019-3-26 22:51:51] Number of user defined test cases: 1 
+[2019-3-26 22:51:51]  Allocated room for TCP packet
 
-[2019-3-26 13:3:7]  Test case #1 
-[2019-3-26 13:3:7]  UDP Payload filled 
-[2019-3-26 13:3:7]  UDP Packet sent to 192.168.1.75
-[2019-3-26 13:3:7] [2019-3-26 13:3:7] 
-[2019-3-26 13:3:7]  Test case #2 
-[2019-3-26 13:3:7]  UDP Payload filled 
-[2019-3-26 13:3:7]  UDP Packet sent to 192.168.1.75
-[2019-3-26 13:3:7] [2019-3-26 13:3:7] 
-[2019-3-26 13:3:7]  Test case #3 
-[2019-3-26 13:3:7]  UDP Payload filled 
-[2019-3-26 13:3:7]  UDP Packet sent to 192.168.1.75
-[2019-3-26 13:3:7] [2019-3-26 13:3:7] [2019-3-26 13:3:7]  Found matching string packet added to queue #1
-[2019-3-26 13:3:7]  00 00 00 0 00 00 0 00 192.168.1.73  00
-[2019-3-26 13:3:7]  100 8045 0
-[2019-3-26 13:3:7]  Payload: this is a test
+[2019-3-26 22:51:52]  Test case #1 
+[2019-3-26 22:51:52]  IP Header filled 
+[2019-3-26 22:51:52]  TCP Header filled 
+[2019-3-26 22:51:52]  TCP Payload filled 
+[2019-3-26 22:51:52]  TCP Packet sent to 192.168.1.75
+[2019-3-26 22:51:52]  00 00 00 0 00 00 0 00 192.168.1.73 192.168.1.75 00
+[2019-3-26 22:51:52]  100 8045 00 0 00 00 00 0 00
+[2019-3-26 22:51:52]  Payload: 
+[2019-3-26 22:51:52]  Received reply from 192.168.1.75 
+
+[2019-3-26 22:51:52]  Test case #2 
+[2019-3-26 22:51:52]  TCP Packet filled 
+[2019-3-26 22:51:52]  05 04 00 28 00 00 255 06 192.168.1.73 192.168.1.75 f736
+[2019-3-26 22:51:52]  100 8045 37e9cc6 547650764 00 05 18 64240 00
+[2019-3-26 22:51:52]  Payload:  ébs i  b Léåt
+ Received reply from 192.168.1.75 
+
+[2019-3-26 22:51:53]  Test case #3 
+[2019-3-26 22:51:53]  TCP Packet filled 
+[2019-3-26 22:51:53]  05 04 00 28 00 00 255 06 192.168.1.73 192.168.1.75 f736
+[2019-3-26 22:51:53]  100 8045 37e9cd4 547650804 00 05 18 64240 00
+[2019-3-26 22:51:53]  Payload:  éQp   ^bFL  .
+ Received reply from 192.168.1.75 
 

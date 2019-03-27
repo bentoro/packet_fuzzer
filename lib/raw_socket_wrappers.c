@@ -1447,13 +1447,12 @@ void send_raw_syn_packet(int sending_socket){
     //send SYN packet
     send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header(generate_rand(UINT_MAX/2),0,0,5,SYN,64249,0), NULL);
     syn_flag = false;
-    packet_info = packet_capture(filter, packet_info);
-    /*
+    //packet_info = packet_capture(filter, packet_info);
     if(recvfrom(sending_socket, buf, sizeof(buf), 0, (struct sockaddr*)&tcpclient, &len) < 0){
       perror("recvfrom");
     } else{
         recv_tcp_packet(buf);
-    }*/
+    }
 }
 
 
@@ -1480,13 +1479,13 @@ void send_raw_fin_packet(int sending_socket){
     send_raw_tcp_packet(build_ip_header(5,4,0,40,0,0,0,0,0,255,7),build_tcp_header((packet_info.ack),(packet_info.seq),0,5,FINACK,64249,0), NULL);
     fin_flag = true;
     if(fin_flag){
-        /*if(recvfrom(sending_socket, buf, sizeof(buf), 0, (struct sockaddr*)&tcpclient, &len) < 0){
+        if(recvfrom(sending_socket, buf, sizeof(buf), 0, (struct sockaddr*)&tcpclient, &len) < 0){
           perror("recvfrom");
         } else{
             recv_tcp_packet(buf);
         }
-        memset(buf, '\0',sizeof(buf));*/
-        packet_info = packet_capture(filter, packet_info);
+        memset(buf, '\0',sizeof(buf));
+        //packet_info = packet_capture(filter, packet_info);
     }
 }
 

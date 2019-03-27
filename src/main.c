@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
             interface = search_interface("wlp2s0");
             src_port = 100;
             strcpy(result, "this is a test");
-            packet_info.protocol = ICMP;
+            packet_info.protocol = TCP;
             printf("protocol: TCP\n");
             printf("src_port: %i\n", src_port);
             dst_port = 8045;
