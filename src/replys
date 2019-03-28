@@ -1,36 +1,30 @@
-[2019-3-26 22:49:30] Test case #1 , reply from 192.168.1.75
-[2019-3-26 22:49:30]  05 04 00 5000 b60b 40 40 06 dab 4b01a8c0 4901a8c0
-[2019-3-26 22:49:30]   100 8045 9cf422bf 1058780912 00 05 18 64226 00
-[2019-3-26 22:49:30]  Payload: The input that you have entered is wrong 
+Test case #1 , reply from 192.168.1.75
+[2019-3-28 8:19:39]  05 04 00 2a00 30e8 00 40 01 be0e 4b01a8c0 4901a8c0
+[2019-3-28 8:19:39]  0 0 1000 28
+[2019-3-28 8:19:39]  Payload: this is a test
 
-[2019-3-26 22:49:31] Test case #2 , reply from 192.168.1.75
-[2019-3-26 22:49:31]  05 04 00 5000 b70b 40 40 06 cab 4b01a8c0 4901a8c0
-[2019-3-26 22:49:31]   100 8045 9cf422e7 1058780926 00 05 18 64212 00
-[2019-3-26 22:49:31]  Payload: The input that you have entered is wronge: application/json; charset=UTF-8
-content-length: 2
+Test case #2 , reply from 192.168.1.75
+[2019-3-28 8:19:39]  05 04 00 2a00 33e8 00 40 01 bb0e 4b01a8c0 4901a8c0
+[2019-3-28 8:19:39]  0 0 1000 28
+[2019-3-28 8:19:39]  Payload: <h s iŸ f tb  
 
-{}ontent-Length: 0
-Connection: keep-alive
+Test case #3 , reply from 192.168.1.75
+[2019-3-28 8:19:39]  05 04 00 2a00 41e8 00 40 01 ad0e 4b01a8c0 4901a8c0
+[2019-3-28 8:19:39]  0 0 1000 28
+[2019-3-28 8:19:39]  Payload: <  s  “ (  bF|
 
-7.0.0.1","version":"6.5.4","http":{"publish_address":"127.0.0.1:9200"}}}} 
+Test case #1 , reply from 192.168.1.75
+[2019-3-28 8:27:37]  05 04 00 2a00 2b5a 00 40 01 c39c 4b01a8c0 4901a8c0
+[2019-3-28 8:27:37]  0 0 1000 28
+[2019-3-28 8:27:37]  Payload: this is a test
 
-[2019-3-26 22:49:31] Test case #3 , reply from 192.168.1.75
-[2019-3-26 22:49:31]  05 04 00 5000 b80b 40 40 06 bab 4b01a8c0 4901a8c0
-[2019-3-26 22:49:31]   100 8045 9cf4230f 1058780940 00 05 18 64198 00
-[2019-3-26 22:49:31]  Payload: The input that you have entered is wrong 
+Test case #2 , reply from 192.168.1.75
+[2019-3-28 8:27:37]  05 04 00 2a00 345a 00 40 01 ba9c 4b01a8c0 4901a8c0
+[2019-3-28 8:27:37]  0 0 1000 28
+[2019-3-28 8:27:37]  Payload: c i ~Ds   t #r
 
-[2019-3-26 22:51:52] Test case #1 , reply from 192.168.1.75
-[2019-3-26 22:51:52]  05 04 00 5000 fe2d 40 40 06 c588 4b01a8c0 4901a8c0
-[2019-3-26 22:51:52]   100 8045 20a47ca4 58629318 00 05 18 64226 00
-[2019-3-26 22:51:52]  Payload: The input that you have entered is wrong 
-
-[2019-3-26 22:51:52] Test case #2 , reply from 192.168.1.75
-[2019-3-26 22:51:52]  05 04 00 5000 ff2d 40 40 06 c488 4b01a8c0 4901a8c0
-[2019-3-26 22:51:52]   100 8045 20a47ccc 58629332 00 05 18 64212 00
-[2019-3-26 22:51:52]  Payload: The input that you have entered is wrong 
-
-[2019-3-26 22:51:53] Test case #3 , reply from 192.168.1.75
-[2019-3-26 22:51:53]  05 04 00 5000 2e 40 40 06 c388 4b01a8c0 4901a8c0
-[2019-3-26 22:51:53]   100 8045 20a47cf4 58629346 00 05 18 64198 00
-[2019-3-26 22:51:53]  Payload: The input that you have entered is wrong 
+Test case #3 , reply from 192.168.1.75
+[2019-3-28 8:27:37]  05 04 00 2a00 375a 00 40 01 b79c 4b01a8c0 4901a8c0
+[2019-3-28 8:27:37]  0 0 1000 28
+[2019-3-28 8:27:37]  Payload: c › ~\s  Y ztr
 
