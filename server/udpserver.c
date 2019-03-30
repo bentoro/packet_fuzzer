@@ -6,11 +6,17 @@
 #include "../lib/fuzz.h"
 
 int main(int argc, char *argv[]) {
-	int sock, optval = 1, SERVER_PORT = 8045;
+	int sock, optval = 1;
 	struct sockaddr_in server_address, client_address;
+
+    if(argc < 3){
+        printf("./tcp [port to listen on] [string to search for]");
+        exit(0);
+    }
+
 	memset(&server_address, 0, sizeof(server_address));
 	server_address.sin_family = AF_INET;
-	server_address.sin_port = htons(SERVER_PORT);
+	server_address.sin_port = htons(atoi(argv[1]));
 	server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	if ((sock = socket(PF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -37,7 +43,7 @@ int main(int argc, char *argv[]) {
         }
         if(len > 0){
             printf("Received: %s from %s\n",buffer, inet_ntoa(client_address.sin_addr));
-            if(search(buffer, "hello",sizeof(len))){
+            if(search(buffer, argv[2],sizeof(len))){
 		        sendto(sock, right, 42, 0, (struct sockaddr *)&client_address, sizeof(client_address));
                 printf("Sent: %s\n",right);
             }else{

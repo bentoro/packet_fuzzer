@@ -1,80 +1,65 @@
-[2019-3-28 8:19:39] Configuration Summary
-[2019-3-28 8:19:39]  Source IP: 192.168.1.73
-[2019-3-28 8:19:39]  Destination IP: 192.168.1.75
-[2019-3-28 8:19:39]  Source port: 100
-[2019-3-28 8:19:39]  Raw sockets: True
-[2019-3-28 8:19:39]  Protocol: ICMP
-[2019-3-28 8:19:39] Interface: wlp2s0
-[2019-3-28 8:19:39]  Total # of testcases: 3
-[2019-3-28 8:19:39]  String to search: this is a test
-[2019-3-28 8:19:39] Number of user defined test cases: 1 
-[2019-3-28 8:19:39]  Allocated room for ICMP packet
+[2019-3-30 14:21:51] Configuration Summary
+[2019-3-30 14:21:51]  Source IP: 192.168.1.73
+[2019-3-30 14:21:51]  Destination IP: 192.168.1.75
+[2019-3-30 14:21:51]  Source port: 100
+[2019-3-30 14:21:51]  Raw sockets: True
+[2019-3-30 14:21:51]  Protocol: TCP
+[2019-3-30 14:21:51]  Total # of testcases: 1
+[2019-3-30 14:21:51]  String to search: correct
+[2019-3-30 14:21:51] Number of user defined test cases: 1 
+[2019-3-30 14:21:51]  Allocated room for TCP packet
 
-[2019-3-28 8:19:39]  Test case #1 
-[2019-3-28 8:19:39]  ICMP Header filled 
-[2019-3-28 8:19:39]  ICMP Payload filled 
-[2019-3-28 8:19:39]  ICMP Packet sent to 192.168.1.75
-[2019-3-28 8:19:39]  ICMP Packet sent to 192.168.1.75
-[2019-3-28 8:19:39]  05 04 00 28 00 00 59 01 192.168.1.73 192.168.1.75 fcfa
-[2019-3-28 8:19:39]  8 0 1000 28
-[2019-3-28 8:19:39]  Payload: this is a test
-[2019-3-28 8:19:39]  Received reply from 192.168.1.75 
-[2019-3-28 8:19:39]  Found matching string packet added to queue #1
-[2019-3-28 8:19:39]  05 04 00 28 00 00 59 01 192.168.1.73 192.168.1.75 fcfa
-[2019-3-28 8:19:39]  8 0 1000 28
-[2019-3-28 8:19:39]  Payload: this is a test
+[2019-3-30 14:21:51]  Test case #1 
+[2019-3-30 14:21:51]  IP Header filled 
+[2019-3-30 14:21:51]  TCP Header filled 
+[2019-3-30 14:21:51]  TCP Payload filled 
+[2019-3-30 14:21:51]  TCP Packet sent to 192.168.1.75
+[2019-3-30 14:21:51]  01 05 b3 256 00 00 0 00 192.168.1.73 192.168.1.75 00
+[2019-3-30 14:21:51]  100 8045 00 0 00 00 00 0 00
+[2019-3-30 14:21:51]  Payload: 
+[2019-3-30 14:21:51]  Received reply from 192.168.1.75 
 
-[2019-3-28 8:19:39]  Test case #2 
-[2019-3-28 8:19:39]  ICMP Packet filled 
-[2019-3-28 8:19:39]  05 04 00 28 00 00 59 01 192.168.1.73 192.168.1.75 fcfa
-[2019-3-28 8:19:39]  8 0 1000 28
-[2019-3-28 8:19:39]  Payload: <h s iŸ f tb  
-[2019-3-28 8:19:39]  Received reply from 192.168.1.75 
+[2019-3-30 14:24:30] Configuration Summary
+[2019-3-30 14:24:30]  Source IP: 192.168.1.73
+[2019-3-30 14:24:30]  Destination IP: 192.168.1.75
+[2019-3-30 14:24:30]  Source port: 100
+[2019-3-30 14:24:30]  Raw sockets: True
+[2019-3-30 14:24:30]  Protocol: TCP
+[2019-3-30 14:24:30]  Total # of testcases: 1
+[2019-3-30 14:24:30]  String to search: correct
+[2019-3-30 14:24:30] Number of user defined test cases: 1 
+[2019-3-30 14:24:30]  Allocated room for TCP packet
 
-[2019-3-28 8:19:39]  Test case #3 
-[2019-3-28 8:19:39]  ICMP Packet filled 
-[2019-3-28 8:19:39]  05 04 00 28 00 00 59 01 192.168.1.73 192.168.1.75 fcfa
-[2019-3-28 8:19:39]  8 0 1000 28
-[2019-3-28 8:19:39]  Payload: <  s  “ (  bF|
-[2019-3-28 8:19:39]  Received reply from 192.168.1.75 
+[2019-3-30 14:24:30]  Test case #1 
+[2019-3-30 14:24:30]  IP Header filled 
+[2019-3-30 14:24:30]  TCP Header filled 
+[2019-3-30 14:24:30]  TCP Payload filled 
+[2019-3-30 14:24:30]  TCP Packet sent to 192.168.1.75
+[2019-3-30 14:24:30]  01 05 b3 256 00 00 0 00 192.168.1.73 192.168.1.75 00
+[2019-3-30 14:24:30]  100 8045 00 0 00 00 00 0 00
+[2019-3-30 14:24:30]  Payload: 
+[2019-3-30 14:24:30]  Received reply from 192.168.1.75 
 
-[2019-3-28 8:27:37] Configuration Summary
-[2019-3-28 8:27:37]  Source IP: 192.168.1.73
-[2019-3-28 8:27:37]  Destination IP: 192.168.1.75
-[2019-3-28 8:27:37]  Source port: 100
-[2019-3-28 8:27:37]  Raw sockets: True
-[2019-3-28 8:27:37]  Protocol: ICMP
-[2019-3-28 8:27:37] Interface: wlp2s0
-[2019-3-28 8:27:37]  Total # of testcases: 3
-[2019-3-28 8:27:37]  String to search: this is a test
-[2019-3-28 8:27:37] Number of user defined test cases: 1 
-[2019-3-28 8:27:37]  Allocated room for ICMP packet
+[2019-3-30 14:27:15] Configuration Summary
+[2019-3-30 14:27:15]  Source IP: 192.168.1.73
+[2019-3-30 14:27:15]  Destination IP: 192.168.1.75
+[2019-3-30 14:27:15]  Source port: 100
+[2019-3-30 14:27:15]  Raw sockets: True
+[2019-3-30 14:27:15]  Protocol: UDP
+[2019-3-30 14:27:15]  Total # of testcases: 1
+[2019-3-30 14:27:15]  String to search: correct
+[2019-3-30 14:27:15] Number of user defined test cases: 1 
+[2019-3-30 14:27:15]  Allocated room for UDP packet
 
-[2019-3-28 8:27:37]  Test case #1 
-[2019-3-28 8:27:37]  ICMP Header filled 
-[2019-3-28 8:27:37]  ICMP Payload filled 
-[2019-3-28 8:27:37]  ICMP Packet sent to 192.168.1.75
-[2019-3-28 8:27:37]  ICMP Packet sent to 192.168.1.75
-[2019-3-28 8:27:37]  05 04 00 28 00 00 59 01 192.168.1.73 192.168.1.75 fcfa
-[2019-3-28 8:27:37]  8 0 1000 28
-[2019-3-28 8:27:37]  Payload: this is a test
-[2019-3-28 8:27:37]  Received reply from 192.168.1.75 
-[2019-3-28 8:27:37]  Found matching string packet added to queue #1
-[2019-3-28 8:27:37]  05 04 00 28 00 00 59 01 192.168.1.73 192.168.1.75 fcfa
-[2019-3-28 8:27:37]  8 0 1000 28
-[2019-3-28 8:27:37]  Payload: this is a test
-
-[2019-3-28 8:27:37]  Test case #2 
-[2019-3-28 8:27:37]  ICMP Packet filled 
-[2019-3-28 8:27:37]  05 04 00 28 00 00 59 01 192.168.1.73 192.168.1.75 fcfa
-[2019-3-28 8:27:37]  8 0 1000 28
-[2019-3-28 8:27:37]  Payload: c i ~Ds   t #r
-[2019-3-28 8:27:37]  Received reply from 192.168.1.75 
-
-[2019-3-28 8:27:37]  Test case #3 
-[2019-3-28 8:27:37]  ICMP Packet filled 
-[2019-3-28 8:27:37]  05 04 00 28 00 00 59 01 192.168.1.73 192.168.1.75 fcfa
-[2019-3-28 8:27:37]  8 0 1000 28
-[2019-3-28 8:27:37]  Payload: c › ~\s  Y ztr
-[2019-3-28 8:27:37]  Received reply from 192.168.1.75 
+[2019-3-30 14:27:15]  Test case #1 
+[2019-3-30 14:27:15]  UDP Header filled 
+[2019-3-30 14:27:15]  UDP Payload filled 
+[2019-3-30 14:27:15]  UDP Packet sent to 192.168.1.75
+[2019-3-30 14:27:15]  05 04 00 28 00 00 255 11 192.168.1.73 192.168.1.75 ec36
+[2019-3-30 14:27:15]  100 8045 8
+[2019-3-30 14:27:15]  Payload: this is a test
+[2019-3-30 14:27:15] [2019-3-30 14:27:15] [2019-3-30 14:27:15]  Found matching string packet added to queue #1
+[2019-3-30 14:27:15]  05 04 00 28 00 00 255 11 192.168.1.73 192.168.1.75 ec36
+[2019-3-30 14:27:15]  100 8045 8
+[2019-3-30 14:27:15]  Payload: this is a test
 

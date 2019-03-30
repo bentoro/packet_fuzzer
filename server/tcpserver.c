@@ -13,11 +13,10 @@
 #include "../lib/normal_socket_wrappers.h"
 #include "../lib/fuzz.h"
 
-#define PORT "8045"
 #define MAXCONNECTIONS 1024
 
 
-int main(void){
+int main(int argc, char **argv){
     int sockfd, new_fd;
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_storage their_addr;
@@ -27,9 +26,14 @@ int main(void){
     char s[INET6_ADDRSTRLEN];
     int rv;
 
+    if(argc < 3){
+        printf("./tcp [port to listen on] [string to search for]");
+        exit(0);
+    }
+
     hints = set_hints(AF_UNSPEC, SOCK_STREAM, AI_PASSIVE);
 
-    if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
+    if ((rv = getaddrinfo(NULL, argv[1], &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
     }
@@ -92,7 +96,7 @@ int main(void){
         }
         if(bytes_receieved > 0){
             printf("Received: %s from %s\n",data, s);
-            if(search(data, "hello",sizeof(bytes_receieved))){
+            if(search(data, argv[2],sizeof(bytes_receieved))){
                 send_normal_tcp_packet(new_fd, right, 42);
                 printf("Sent: %s\n",right);
             }else{
