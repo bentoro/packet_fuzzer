@@ -217,7 +217,7 @@ int main(int argc, char **argv) {
       //Allocate atleast half of the total test cases
       tcp_packets = calloc(((total_testcases)/2)+1, sizeof(struct tcp_packet));
       if(normal){
-        delay.tv_sec = 1;
+        delay.tv_sec = 0;
         delay.tv_nsec = 0;
         print_time();
         sending_socket = start_tcp_client(target, string_port);
@@ -231,7 +231,7 @@ int main(int argc, char **argv) {
   }else if(packet_info.protocol == UDP){
       strncpy(protocol, "UDP", sizeof("UDP"));
       delay.tv_sec = 0;
-      delay.tv_nsec = 500000000;
+      delay.tv_nsec = 0;
       print_time();
       printf(" Allocated room for UDP packet\n");
       log_print_time();
